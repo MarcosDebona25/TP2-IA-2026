@@ -216,3 +216,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# TP2 — datos locales generados (no van al repo)
+chroma_db/
+*.csv
+*.pdf
