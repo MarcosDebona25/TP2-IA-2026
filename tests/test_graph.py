@@ -1,0 +1,72 @@
+# tests/test_graph.py
+#
+# Smoke tests del esqueleto del grafo: verifican que el flujo completo ejecuta
+# de punta a punta con los nodos stub, sin errores, y que el routing y el
+# guardrail del loop de refinamiento se comportan como se espera.
+
+import pytest
+
+from orchestrator.graph import build_graph, decide_next, route_from_orchestrator
+
+
+@pytest.fixture
+def app():
+    # Una instancia nueva por test para no compartir el checkpointer
+    return build_graph()
+
+
+def _cfg(thread_id):
+    return {"configurable": {"thread_id": thread_id}}
+
+
+def test_pipeline_completo(app):
+    """Consulta nueva → Monitor → Clínico, termina con reporte."""
+    init = {"patient_id": "P123", "query": "Analizá al paciente", "conversation": []}
+    out = app.invoke(init, _cfg("t-pipeline"))
+
+    assert out["is_followup"] is False
+    assert out["report"] is not None
+    assert out["iteration"] == 1                # el Clínico corrió una vez
+    # Monitor + Clínico agregaron un mensaje cada uno
+    assert len(out["conversation"]) == 2
+
+
+def test_followup_va_directo_al_clinico(app):
+    """Con reporte previo, una pregunta de seguimiento no recalcula el Monitor."""
+    init = {"patient_id": "P123", "query": "Analizá al paciente", "conversation": []}
+    app.invoke(init, _cfg("t-follow"))
+    out = app.invoke({"query": "¿Qué significa la HbA1c?"}, _cfg("t-follow"))
+
+    assert out["is_followup"] is True
+
+
+def test_confirmacion_termina_sin_agentes(app):
+    """'confirmar' marca awaiting_confirmation y corta el flujo."""
+    init = {"patient_id": "P123", "query": "Analizá al paciente", "conversation": []}
+    app.invoke(init, _cfg("t-confirm"))
+    out = app.invoke({"query": "confirmar"}, _cfg("t-confirm"))
+
+    assert out["awaiting_confirmation"] is True
+
+
+# ---- Unit tests de las funciones de routing ----
+
+def test_decide_next_refina_si_info_insuficiente():
+    state = {"iteration": 1, "is_followup": False, "information_sufficient": False}
+    assert decide_next(state) == "monitor"
+
+
+def test_decide_next_guardrail_corta_en_3():
+    state = {"iteration": 3, "is_followup": False, "information_sufficient": False}
+    assert decide_next(state) == "end"
+
+
+def test_decide_next_termina_si_info_suficiente():
+    state = {"iteration": 1, "is_followup": False, "information_sufficient": True}
+    assert decide_next(state) == "end"
+
+
+def test_route_from_orchestrator():
+    assert route_from_orchestrator({"awaiting_confirmation": True}) == "save"
+    assert route_from_orchestrator({"is_followup": True}) == "followup"
+    assert route_from_orchestrator({}) == "pipeline"

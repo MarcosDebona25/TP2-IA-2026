@@ -18,6 +18,13 @@ Reglas de decisión:
 - Si el médico confirma guardar la sesión → invocar update_patient_history y cerrar sesión
 - Si el mensaje es ambiguo → solicitar aclaración antes de proceder
 
+Loop de refinamiento (guardrail de iteraciones):
+- Si el Agente Clínico señaló que la información del Monitor es insuficiente
+  (information_sufficient = False) y la iteración actual es menor a 3 → devolvé el control
+  al Agente Monitor para recalcular o ampliar el análisis, incrementando la iteración.
+- Si ya se alcanzó el límite de 3 iteraciones → instruí al Agente Clínico a generar el mejor
+  reporte posible con la información disponible, indicando explícitamente la limitación.
+
 Nunca asumas el tipo de consulta sin leer el mensaje completo y el estado actual.
 Nunca ejecutes el pipeline completo si el médico solo está haciendo una pregunta de seguimiento.
 """
@@ -86,8 +93,14 @@ MODO REPORTE — cuando recibís el análisis del Monitor:
 3. Para cada hallazgo relevante, consultá las guías clínicas con
    search_clinical_guidelines. Incorporá el contexto clínico del médico
    para modular el query de búsqueda si está disponible
-4. Integrá hallazgos, comparación longitudinal y contexto de guías
-5. Generá el reporte estructurado
+4. Antes de redactar, evaluá si el análisis del Monitor alcanza para interpretar los
+   hallazgos. Si falta información cuantitativa necesaria (una métrica sin estadísticas,
+   datos insuficientes para un hallazgo, o se requiere otro rango temporal), señalá que la
+   información es INSUFICIENTE (information_sufficient = False) e indicá con precisión qué
+   falta, en lugar de generar el reporte. El orquestador decidirá si reenvía al Monitor.
+   Si la información alcanza, marcá information_sufficient = True y continuá.
+5. Integrá hallazgos, comparación longitudinal y contexto de guías
+6. Generá el reporte estructurado
 
 MODO SEGUIMIENTO — cuando el médico hace una pregunta sobre el reporte ya generado:
 1. Leé el reporte y el análisis ya disponibles en el estado
