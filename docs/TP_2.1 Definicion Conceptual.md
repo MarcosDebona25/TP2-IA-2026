@@ -178,19 +178,31 @@ Responsable del análisis cuantitativo. No realiza interpretaciones clínicas: s
 
 Carga el historial clínico del paciente desde el EHR externo (CSV o SQLite). Devuelve un diccionario con series temporales de glucosa en ayunas, HbA1c, glucosa postprandial, peso y presión arterial.
 
-**Tool 2: `calculate_stats(metric: str, values: list, timerange: str) → dict`**
+**Tool 2: `calculate_stats(patient_id: str, metric: str, timerange: TimeRange = None) → MetricStats`**
 
-Calcula media, desviación estándar, tendencia lineal (pendiente) y último valor registrado para una métrica dada en el rango temporal especificado.
+Calcula estadísticas **clínicamente accionables** para una métrica en la ventana temporal indicada (toda la serie si `timerange` es `None`). Devuelve un `MetricStats` con: `last_value` (último valor, lo más relevante), `mean` (nivel promedio), `min_value` / `max_value` (extremos —exponen eventos que la media esconde, p. ej. una hipoglucemia puntual), `delta` (cambio neto) y `direction` ("subiendo"/"bajando"/"estable").
 
-**Tool 3: `detect_threshold_violations(metric: str, values: list) → list`**
+> Refinamiento de implementación (contrato A+C): respecto del diseño original `(metric, values, timerange: str) → dict`, la tool se invoca **por `patient_id`** (carga y recorta los datos internamente; el LLM no transporta arrays) y el subrango se modela con el tipo `TimeRange` (`last_n_months` **o** `start`/`end`). Se descartaron la desviación estándar y la pendiente cruda por su baja utilidad clínica, y se incorporaron extremos, delta y dirección legible.
 
-Compara cada valor contra los umbrales clínicos de la ADA y devuelve una lista de violaciones con timestamp, valor y severidad (leve / moderada / severa). Umbrales leídos desde un documento común que tenga los lineamientos ADA:
+**Tool 3: `detect_threshold_violations(patient_id: str, metric: str, timerange: TimeRange = None) → list[Alert]`**
 
-| Métrica | Normal | Alerta | Crítico |
+Compara cada valor de la métrica (en la ventana indicada) contra los umbrales clínicos de la ADA y devuelve una lista de `Alert` con fecha, valor, severidad (moderada / severa) y descripción. Detecta **hiperglucemia e hipoglucemia**. Umbrales:
+
+*Hiperglucemia (valores altos):*
+
+| Métrica | Normal | Alerta (moderada) | Crítico (severa) |
 |---|---|---|---|
 | Glucosa ayunas (mg/dL) | < 100 | 100–125 | ≥ 126 |
 | HbA1c (%) | < 5.7 | 5.7–6.4 | ≥ 6.5 |
 | Glucosa postprandial (mg/dL) | < 140 | 140–199 | ≥ 200 |
+
+*Hipoglucemia (valores bajos, solo glucemias):*
+
+| Métrica | Moderada (nivel 1) | Severa (nivel 2) |
+|---|---|---|
+| Glucosa ayunas / postprandial (mg/dL) | < 70 | < 54 |
+
+> Refinamiento de implementación (contrato A+C): el núcleo recibe también las **fechas** (`Alert` exige la fecha del registro). Los umbrales viven en la constante `ADA_THRESHOLDS`. "leve" queda reservada: solo se emiten "moderada"/"severa" (que disparan `requires_rag`). Peso y presión arterial no tienen umbral definido aún.
 
 **Tool 4: `get_medication_schedule(patient_id: str) → list`**
 

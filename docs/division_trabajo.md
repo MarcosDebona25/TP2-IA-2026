@@ -2,8 +2,8 @@ Integrante A — Orquestador + Agente Monitor
 orchestrator/graph.py — reemplazar los stubs por los agentes reales a medida que C y B entregan sus módulos. Mantener el guardrail, el nodo condicional y la memoria.
 orchestrator/router.py — reemplazar la lógica simple de routing por la clasificación via LLM del Orquestador real.
 orchestrator/state.py — custodiar el archivo, cualquier cambio lo coordina con el grupo.
-agents/monitor.py — implementar el Agente Monitor real conectando las tools de C al LLM via LangChain.
-tools/threshold_tools.py — implementar detect_threshold_violations() con los umbrales ADA como constantes.
+agents/monitor.py — implementar el Agente Monitor real (agente ReAct) conectando las tools de C al LLM via LangChain; el LLM elige la ventana temporal (TimeRange) y el foco de métricas.
+tools/threshold_tools.py — [HECHO con C] detect_threshold_violations() con los umbrales ADA como constantes (ADA_THRESHOLDS), hiper e hipoglucemia.
 
 Integrante B — RAG pipeline + datos sintéticos + MongoDB
 rag/ingest.py — descarga de PDFs de guías clínicas, chunking, embeddings con nomic-embed-text, indexación en ChromaDB.
@@ -13,14 +13,14 @@ Configuración de MongoDB — definir el schema del documento de paciente en JSO
 tools/rag_tools.py — exponer search_clinical_guidelines() y get_rag_fragment() como tools invocables por LangChain.
 
 Integrante C — Tools del Monitor + Agente Clínico
-tools/patient_tools.py — implementar load_patient_data(), calculate_stats() y get_medication_schedule().
-tools/threshold_tools.py — en coordinación con A, definir la interfaz de detect_threshold_violations().
+tools/patient_tools.py — [HECHO] load_patient_data(), calculate_stats() (devuelve MetricStats con campos clínicamente accionables: last_value/mean/min_value/max_value/delta/direction) y get_medication_schedule(). Invocadas por patient_id + metric + TimeRange; ventaneo único en window_metrics().
+tools/threshold_tools.py — [HECHO con A] interfaz de detect_threshold_violations() ratificada (por patient_id + metric + timerange; recibe dates en el núcleo).
 agents/clinical.py — implementar el Agente Clínico con sus dos modos (reporte y seguimiento), conectando las tools de MongoDB y RAG.
 tools/patient_tools.py — también get_patient_history(), compare_with_previous_sessions() y update_patient_history() que operan sobre MongoDB.
 
 Integrante D — Interfaz + observabilidad + evaluación
-interface/app.py — Streamlit: selector de paciente, campo de contexto clínico del médico, input de consulta, visualización del reporte, historial de conversación, botón de confirmación para guardar sesión.
-interface/components.py — componentes reutilizables: tabla de alertas, visualización de tendencias, badge de severidad.
+interface/app.py — Gradio (decisión del equipo, no Streamlit): selector de paciente, campo de contexto clínico del médico, input de consulta, visualización del reporte, historial de conversación, botón de confirmación para guardar sesión.
+interface/components.py — componentes reutilizables: tabla de alertas, visualización de tendencias (MetricStats.direction + extremos min/max), badge de severidad.
 interface/logging_config.py — configuración de LangSmith y logging propio en JSON.
 tests/test_tools.py — validación determinística de todas las tools: mismo input, mismo output esperado.
 tests/cases/ — definir los 10 casos de prueba en JSON cubriendo happy path, casos límite y adversariales.

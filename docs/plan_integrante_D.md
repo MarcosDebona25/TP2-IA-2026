@@ -101,7 +101,8 @@ la UI (evita abrir LangSmith o hacer `jq` en la demo):
 testeables determinísticamente; alimentan los tests del Fragmento 3):
 - `severity_badge(severity: str) -> str` — badge color para `leve|moderada|severa`.
 - `alerts_table(alerts: list[Alert]) -> str` — tabla de alertas.
-- `trends_view(analysis: MonitorAnalysis) -> str` — flechas ↑/↓/→ por métrica (de `MetricStats.trend`).
+- `trends_view(analysis: MonitorAnalysis) -> str` — flechas ↑/↓/→ por métrica (de `MetricStats.direction`;
+  resaltar `min_value`/`max_value` cuando hay un extremo, p. ej. hipoglucemia).
 - `patient_profile(history: dict) -> str` — resumen demográfico.
 - `format_report(state) -> str` — ensambla el panel de reporte.
 - `load_log_entries(path: str, event_filter: str | None) -> list[dict]` — parsea `logs/agent.jsonl`

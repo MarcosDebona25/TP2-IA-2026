@@ -1,0 +1,15 @@
+{
+  "P001": [
+    { "name": "Metformina", "dose": "850mg", "frequency": "cada 12h" }
+  ],
+  "P002": [
+    { "name": "Metformina", "dose": "1000mg", "frequency": "cada 12h" },
+    { "name": "Empagliflozina", "dose": "10mg", "frequency": "cada 24h" }
+  ],
+  "P003": [
+    { "name": "Metformina", "dose": "500mg", "frequency": "cada 12h" }
+  ],
+  "P004": [
+    { "name": "Metformina", "dose": "850mg", "frequency": "cada 24h" }
+  ]
+}

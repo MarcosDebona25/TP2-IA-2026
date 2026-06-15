@@ -1,5 +1,5 @@
 from typing import TypedDict, Optional, Annotated
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 from datetime import date
 import operator
 
@@ -31,6 +31,37 @@ class PatientMetrics(BaseModel):
     cgm_series: Optional[list[float]] = None  # lecturas CGM crudas (cada 5-15 min)
 
 
+class TimeRange(BaseModel):
+    """
+    Ventana temporal de análisis del Monitor (contrato A+C). Dos formas mutuamente
+    excluyentes para acotar la serie:
+      - `last_n_months`: int  → los últimos N registros mensuales (atajo cómodo).
+      - `start` / `end`: date → rango explícito [start, end] inclusive (cualquier extremo opcional).
+    Sin campos (todo None) ⇒ análisis GLOBAL sobre toda la serie. La aplica `window_metrics()`
+    en tools/patient_tools.py; es el parámetro que el Agente Monitor (LLM) elige por consulta
+    a partir de la consulta del médico y el doctor_context.
+    """
+    last_n_months: Optional[int] = None
+    start: Optional[date] = None
+    end: Optional[date] = None
+
+    @model_validator(mode="after")
+    def _validate_exclusivo(self) -> "TimeRange":
+        if self.last_n_months is not None:
+            if self.start is not None or self.end is not None:
+                raise ValueError("TimeRange: usar last_n_months O (start/end), no ambos a la vez")
+            if self.last_n_months < 1:
+                raise ValueError("TimeRange: last_n_months debe ser >= 1")
+        if self.start is not None and self.end is not None and self.start > self.end:
+            raise ValueError("TimeRange: start no puede ser posterior a end")
+        return self
+
+    @property
+    def is_global(self) -> bool:
+        """True si no acota nada (análisis sobre toda la serie)."""
+        return self.last_n_months is None and self.start is None and self.end is None
+
+
 # -------------------------------------------------------------------
 # Modelos de datos — medicación y estadísticas
 # -------------------------------------------------------------------
@@ -43,11 +74,23 @@ class Medication(BaseModel):
 
 
 class MetricStats(BaseModel):
-    """Estadísticas calculadas para una métrica (output de calculate_stats)."""
-    mean: float          # media
-    std: float           # desviación estándar
-    trend: float         # pendiente de la tendencia lineal
-    last_value: float    # último valor registrado
+    """
+    Estadísticas clínicamente accionables de una métrica (output de calculate_stats).
+
+    Diseño (contrato A+C, ver "Flujo de métricas" en docs/CLAUDE.md): se prioriza lo que un
+    médico realmente lee en un seguimiento de diabetes. Se quitaron `std` y la pendiente cruda
+    (`trend`): la desviación estándar de mediciones puntuales aporta poco y la pendiente no es
+    interpretable para el médico. En su lugar:
+      - `last_value` + `direction` + `delta` → "cómo está hoy y hacia dónde va".
+      - `min_value` / `max_value` → exponen EXTREMOS que la media esconde (p. ej. un episodio
+        de hipoglucemia que el promedio diluiría).
+    """
+    last_value: float    # último valor registrado (lo más importante para el médico)
+    mean: float          # media de la ventana (nivel promedio)
+    min_value: float     # valor mínimo en la ventana (extremo bajo, p. ej. hipoglucemia)
+    max_value: float     # valor máximo en la ventana (extremo alto, p. ej. pico glucémico)
+    delta: float         # cambio neto en la ventana (último − primero)
+    direction: str       # "subiendo" | "bajando" | "estable" (tendencia legible)
 
 
 class BloodPressureStats(BaseModel):
