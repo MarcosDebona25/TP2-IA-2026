@@ -151,7 +151,7 @@ el LLM razona el *qué* y el *hasta cuándo*; el cálculo es 100% determinístic
 - Toda salida clínica incluye el disclaimer obligatorio (ver `prompts.py`).
 - Las tools del Monitor son **determinísticas**; validarlas con tests determinísticos.
 
-## Estado de implementación (al 2026-06-14)
+## Estado de implementación (al 2026-06-15)
 
 | Módulo | Estado |
 |---|---|
@@ -163,10 +163,13 @@ el LLM razona el *qué* y el *hasta cuándo*; el cálculo es 100% determinístic
 | `interface/app.py` (Gradio) | 🟨 esqueleto funcional contra el grafo real (chat + reporte); falta layout completo y pestaña de observabilidad |
 | `tests/conftest.py`, `.env.example` (LangSmith) | ✅ `load_dotenv` + vars de tracing |
 | Tools del Monitor (EHR/umbrales) + `data/sample/` | 🟨 `patient_tools.py` y `threshold_tools.py` listos y testeados (por `patient_id` + `TimeRange`, ventaneo único); falta envolverlas como tools LangChain y armar el agente Monitor (A) |
-| Tools de Mongo (`get_patient_history`, `compare_*`, `update_*`) | ⬜ pendientes (bloqueadas por B) |
+| Tools de Mongo (`get_patient_history`, `compare_*`, `update_*`) | ✅ `tools/mongo_tools.py` entregado (B); C puede conectar `patient_tools.py` |
+| `data/generate_patients.py` | ✅ 4 perfiles sintéticos (P001–P004) generando CSVs en `data/sample/` |
+| MongoDB (schema + instancia + carga) | ✅ instancia Docker en `localhost:27017`; `data/load_mongo.py` carga los 4 pacientes en `tp2_diabetes.patients` |
+| RAG — ingestión (`rag/ingest.py`) | ✅ chunking + embeddings `nomic-embed-text` + ChromaDB persistido en `data/chroma_db/`; parámetros tunables en `rag/RAG_TUNING.md` |
+| RAG — retrieval (`rag/retriever.py`) | ✅ `search_clinical_guidelines()` + `get_rag_fragment()`; probar con `uv run python rag/retriever.py` |
+| RAG — tools LangChain (`tools/rag_tools.py`) | ✅ `search_clinical_guidelines_tool` y `get_rag_context_tool` listos para el Agente Clínico (C) |
 | Agentes reales (`agents/monitor.py`, `clinical.py`) | ⬜ vacíos |
-| RAG (`rag/*.py`), datos reales (`data/generate_patients.py`) | ⬜ vacíos |
-| MongoDB (schema + instancia + carga) | ⬜ pendiente |
 | `interface/components.py` | ⬜ vacío |
 | `tests/test_tools.py`, `tests/cases/*.json` | ⬜ vacíos |
 
