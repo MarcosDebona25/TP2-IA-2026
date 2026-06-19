@@ -52,11 +52,17 @@ uv lock                 # regenerar lockfile tras cambiar dependencias
   `MetricStats`, `BloodPressureStats`, `CGMMetrics`, `TimeRange` (ventana de análisis del
   Monitor). **Archivo custodiado**: coordinar cualquier cambio con el grupo (es contrato
   compartido entre todos los nodos).
-- [orchestrator/graph.py](orchestrator/graph.py) — grafo LangGraph. Hoy con **nodos stub**.
-  Entry en `orchestrator`; `monitor → clinical`; loop de refinamiento `clinical → monitor`.
+- [orchestrator/graph.py](orchestrator/graph.py) — grafo LangGraph. Entry en `orchestrator`;
+  `monitor → clinical`; loop de refinamiento `clinical → monitor`. **Los nodos Monitor y
+  Clínico son reales** (agentes ReAct + fallbacks determinísticos sin API key).
 - [orchestrator/router.py](orchestrator/router.py) — lógica de routing (heurística por
   ahora; reemplazar por clasificación vía LLM).
 - [agents/prompts.py](agents/prompts.py) — system + human prompts de los 3 agentes.
+- [agents/monitor.py](agents/monitor.py) — Agente Monitor real (Integrante A). Loop ReAct:
+  wrappea las 4 tools de C como `@tool` de LangChain, las bindea a `ChatGroq`
+  (`llama-3.3-70b`), ejecuta el loop de razonamiento, y ensambla `MonitorAnalysis`
+  programáticamente. Si no hay `GROQ_API_KEY`, cae a un fallback determinístico
+  (ejecuta las tools directamente sin LLM).
 - [interface/logging_config.py](interface/logging_config.py) — observabilidad (Integrante D).
   `setup_logging()` (consola legible + `logs/agent.jsonl` vía `RotatingFileHandler`) y
   `LoggingCallbackHandler` (`BaseCallbackHandler`) que registra nodos/routing hoy y
@@ -77,11 +83,10 @@ uv lock                 # regenerar lockfile tras cambiar dependencias
   e hipoglucemia**: bandas alta y baja, severidad `moderada`/`severa`. Núcleo puro
   `_detect_violations(metric, values, dates)`. Glucemias con ambas bandas; HbA1c solo alta;
   peso/presión sin umbral (ver caveats en el README).
-- [data/sample/](data/sample/) — **fixture provisional** (contrato #1): 4 perfiles
+- [data/sample/](data/sample/) — **fixture provisional** (contrato #1): 4 CSVs
   (`P001`–`P004`) + `medications.json`. **No es el dataset final**; B debe respetar su schema.
   Ver [data/sample/README.md](data/sample/README.md).
-- `agents/`, `rag/`, `data/generate_patients.py`, las tools de Mongo y
-  `interface/components.py` — **mayormente vacíos/pendientes**.
+- `rag/`, `data/generate_patients.py` y `interface/components.py` — **vacíos/pendientes**.
 
 ## Flujo de métricas (contrato A+C)
 
@@ -151,36 +156,38 @@ el LLM razona el *qué* y el *hasta cuándo*; el cálculo es 100% determinístic
 - Toda salida clínica incluye el disclaimer obligatorio (ver `prompts.py`).
 - Las tools del Monitor son **determinísticas**; validarlas con tests determinísticos.
 
-## Estado de implementación (al 2026-06-14)
+## Estado de implementación (al 2026-06-19)
 
 | Módulo | Estado |
 |---|---|
 | `state.py`, `prompts.py` | ✅ completos y verificados |
-| `graph.py`, `router.py` | ✅ esqueleto funcional con stubs (corre end-to-end) |
-| `tests/test_graph.py` + `tests/test_monitor_tools.py` | ✅ 44 tests pasando |
-| `pyproject.toml`, entorno uv | ✅ deps y entorno listos |
-| Observabilidad (`interface/logging_config.py`) | ✅ logging dual (consola + JSONL) + LangSmith; ya tracea los nodos stub |
+| `graph.py`, `router.py` | ✅ grafo funcional end-to-end; Monitor y Clínico reales; routing heurístico |
+| `agents/monitor.py` | ✅ **Agente Monitor real**: loop ReAct (ChatGroq + 4 tools LangChain), fallback determinístico sin API key, produce `MonitorAnalysis` |
+| `agents/clinical.py` | ✅ **Agente Clínico real**: loop ReAct (ChatGroq + 3 tools LangChain), fallback determinístico sin API key, modos reporte/seguimiento |
+| Tools del Monitor (EHR/umbrales) + `data/sample/` | ✅ `patient_tools.py` y `threshold_tools.py` listos y testeados; envueltas como `@tool` LangChain en `agents/monitor.py`; CSVs P001–P004 creados |
+| `tests/test_graph.py` + `tests/test_monitor_tools.py` | ✅ 48 tests (incluye tests para Clínico real, stubs y loop de refinamiento) |
+| `pyproject.toml`, entorno uv | ✅ deps, entorno uv y tests funcionando listos |
+| Observabilidad (`interface/logging_config.py`) | ✅ logging dual (consola + JSONL) + LangSmith; ya tracea los nodos |
 | `interface/app.py` (Gradio) | 🟨 esqueleto funcional contra el grafo real (chat + reporte); falta layout completo y pestaña de observabilidad |
 | `tests/conftest.py`, `.env.example` (LangSmith) | ✅ `load_dotenv` + vars de tracing |
-| Tools del Monitor (EHR/umbrales) + `data/sample/` | 🟨 `patient_tools.py` y `threshold_tools.py` listos y testeados (por `patient_id` + `TimeRange`, ventaneo único); falta envolverlas como tools LangChain y armar el agente Monitor (A) |
-| Tools de Mongo (`get_patient_history`, `compare_*`, `update_*`) | ⬜ pendientes (bloqueadas por B) |
-| Agentes reales (`agents/monitor.py`, `clinical.py`) | ⬜ vacíos |
-| RAG (`rag/*.py`), datos reales (`data/generate_patients.py`) | ⬜ vacíos |
-| MongoDB (schema + instancia + carga) | ⬜ pendiente |
+| Tools de Mongo (`get_patient_history`, `compare_*`, `update_*`) | 🟡 stubs funcionales en `patient_tools.py` (para desacoplar de B) |
+| RAG (`rag/*.py`), datos reales (`data/generate_patients.py`) | ⬜ vacíos (bloqueado por B) |
+| MongoDB (schema + instancia + carga) | ⬜ pendiente (bloqueado por B) |
 | `interface/components.py` | ⬜ vacío |
-| `tests/test_tools.py`, `tests/cases/*.json` | ⬜ vacíos |
+| `tests/test_tools.py` | ✅ tests para las tools del Clínico completados |
+| `tests/cases/*.json` | ⬜ vacíos |
 
 ## División de trabajo
 
 Ver [docs/division_trabajo.md](docs/division_trabajo.md). Resumen:
 
-- **A — Orquestador + Monitor**: `graph.py` (reemplazar stubs por agentes reales
-  manteniendo guardrail/condicional/memoria), `router.py` (LLM), custodia de `state.py`,
-  `agents/monitor.py`, `tools/threshold_tools.py`.
+- **A — Orquestador + Monitor**: `graph.py` (**Monitor y Clínico reales ya integrados**, falta
+  router LLM), `router.py` (LLM pendiente), custodia de `state.py`,
+  `agents/monitor.py` (**✅ implementado**), `tools/threshold_tools.py` (✅).
 - **B — RAG + datos + MongoDB**: `rag/ingest.py`, `rag/retriever.py`,
   `data/generate_patients.py`, schema e instancia de MongoDB, `tools/rag_tools.py`.
-- **C — Tools del Monitor + Clínico**: `tools/patient_tools.py` (5 funciones),
-  `agents/clinical.py` (modos reporte y seguimiento).
+- **C — Tools del Monitor + Clínico**: `tools/patient_tools.py` (5 funciones + stubs de Mongo),
+  `agents/clinical.py` (**✅ implementado**, modos reporte y seguimiento).
 - **D — Interfaz + observabilidad + evaluación**: `interface/*.py`,
   `tests/test_tools.py`, `tests/cases/*.json` (10 casos).
 
@@ -195,12 +202,11 @@ Coordinación crítica:
 
 ## Próximos pasos
 
-1. Reemplazar los nodos stub de `graph.py` por los agentes reales a medida que B y C
-   entregan (responsable A), preservando guardrail, condicional y memoria.
-2. Agregar el nodo de persistencia: rama `save` → `update_patient_history` (hoy `save`
-   termina en `END`).
-3. Reemplazar la heurística de `router.py` por clasificación vía LLM.
-4. Implementar tools, RAG, MongoDB, datos sintéticos y los casos de prueba (5–15).
-5. Completar la interfaz Gradio (layout def. conceptual + pestaña de observabilidad) y
-   `interface/components.py`. **Logging propio + LangSmith ya están listos** y traceando.
+1. ~~Reemplazar el stub del Monitor por agente real~~ **✅ HECHO**
+2. ~~Implementar `agents/clinical.py` (Agente Clínico real) e integrar en `graph.py`~~ **✅ HECHO**
+3. Agregar el nodo de persistencia: rama `save` → `update_patient_history` (hoy `save` termina en `END`).
+4. Reemplazar la heurística de `router.py` por clasificación vía LLM.
+5. Conectar MongoDB real y RAG real en cuanto B implemente sus componentes.
+6. Completar la interfaz Gradio (layout def. conceptual + pestaña de observabilidad) y `interface/components.py`.
+7. Diseñar y cargar los casos de prueba (`tests/cases/*.json`).
 ```

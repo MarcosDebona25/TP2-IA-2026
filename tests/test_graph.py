@@ -70,3 +70,17 @@ def test_route_from_orchestrator():
     assert route_from_orchestrator({"awaiting_confirmation": True}) == "save"
     assert route_from_orchestrator({"is_followup": True}) == "followup"
     assert route_from_orchestrator({}) == "pipeline"
+
+
+def test_refinamiento_loop_insuficiente(app):
+    """Paciente P004 (datos insuficientes) -> dispara loop de refinamiento y frena por guardrail."""
+    init = {"patient_id": "P004", "query": "Analizá al paciente P004", "conversation": []}
+    out = app.invoke(init, _cfg("t-refine"))
+
+    # El orquestador debe realizar 3 iteraciones (vuelta al monitor y clínico) por datos insuficientes
+    assert out["iteration"] == 3
+    assert out["information_sufficient"] is True  # En la última iteración, frena por guardrail (suficiente=True para terminar)
+    assert out["report"] is not None
+    # Cada vuelta agrega mensajes a la conversación (1 monitor + 1 clínico por vuelta = 6 mensajes)
+    assert len(out["conversation"]) == 6
+

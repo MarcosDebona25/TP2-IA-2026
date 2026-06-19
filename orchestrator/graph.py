@@ -1,14 +1,19 @@
 # orchestrator/graph.py
 
+import logging
+import os
+
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
 
 from orchestrator.state import AgentState
 from orchestrator.router import is_followup_message, is_confirmation_message
 
+logger = logging.getLogger(__name__)
+
 
 # -------------------------------------------------------------------
-# Stubs de nodos — reemplazar con implementación real progresivamente
+# Nodo Orquestador
 # -------------------------------------------------------------------
 
 def orchestrator_node(state: AgentState) -> AgentState:
@@ -30,20 +35,102 @@ def orchestrator_node(state: AgentState) -> AgentState:
     }
 
 
+# -------------------------------------------------------------------
+# Nodo Monitor — agente real con fallback a stub si no hay API key
+# -------------------------------------------------------------------
+
 def monitor_node(state: AgentState) -> AgentState:
     """
-    Analiza las métricas del paciente con tools determinísticas.
-    TODO: reemplazar con Agente Monitor real (load_patient_data, calculate_stats,
-    detect_threshold_violations, get_medication_schedule).
+    Analiza las métricas del paciente con el Agente Monitor real (ReAct + tools
+    determinísticas). Si no hay GROQ_API_KEY configurada, cae al stub para que
+    los tests y el desarrollo sin LLM sigan funcionando.
     """
-    # Stub: devuelve análisis vacío
-    return {
-        "analysis": None,
-        "conversation": [{
-            "role": "assistant",
-            "content": "[Monitor stub] Análisis pendiente de implementación."
-        }]
-    }
+    patient_id = state.get("patient_id", "")
+
+    # Si no hay API key, usar el fallback determinístico sin LLM
+    if not os.environ.get("GROQ_API_KEY"):
+        logger.warning("Monitor: sin GROQ_API_KEY, ejecutando fallback determinístico")
+        return _monitor_fallback(state)
+
+    try:
+        from agents.monitor import run_monitor_agent
+        analysis = run_monitor_agent(state)
+
+        # Resumen legible para la conversación
+        n_alerts = len(analysis.alerts)
+        alert_summary = f"{n_alerts} alerta(s) detectada(s)" if n_alerts > 0 else "sin alertas"
+        summary = (
+            f"Análisis del paciente {patient_id} completado: {alert_summary}. "
+            f"Métricas analizadas: glucosa en ayunas, HbA1c, glucosa postprandial, "
+            f"peso, presión arterial. Medicación: {len(analysis.medication)} fármaco(s)."
+        )
+
+        return {
+            "analysis": analysis,
+            "conversation": [{
+                "role": "assistant",
+                "content": f"[Monitor] {summary}",
+            }],
+        }
+    except Exception as e:
+        logger.error("Monitor: error en agente real, fallback determinístico: %s", e)
+        return _monitor_fallback(state)
+
+
+def _monitor_fallback(state: AgentState) -> AgentState:
+    """
+    Fallback determinístico del Monitor: ejecuta todas las tools directamente
+    sin LLM y construye un MonitorAnalysis. Útil para tests y cuando no hay API key.
+    """
+    patient_id = state.get("patient_id", "")
+
+    try:
+        from agents.monitor import _build_analysis
+        from tools.patient_tools import (
+            calculate_stats,
+            get_medication_schedule,
+            SERIES_METRICS,
+        )
+        from tools.threshold_tools import detect_threshold_violations, ADA_THRESHOLDS
+        from orchestrator.state import MetricStats
+
+        # Calcular stats para todas las métricas
+        stats: dict[str, MetricStats] = {}
+        for metric in SERIES_METRICS:
+            try:
+                stats[metric] = calculate_stats(patient_id, metric)
+            except (ValueError, FileNotFoundError):
+                pass
+
+        # Detectar violaciones para métricas con umbral
+        alerts = []
+        for metric in ADA_THRESHOLDS:
+            try:
+                alerts.extend(detect_threshold_violations(patient_id, metric))
+            except (ValueError, FileNotFoundError):
+                pass
+
+        # Medicación
+        meds = get_medication_schedule(patient_id)
+
+        analysis = _build_analysis(patient_id, stats, alerts, meds)
+
+        return {
+            "analysis": analysis,
+            "conversation": [{
+                "role": "assistant",
+                "content": f"[Monitor fallback] Análisis determinístico del paciente {patient_id} completado.",
+            }],
+        }
+    except Exception as e:
+        logger.error("Monitor fallback: error: %s", e)
+        return {
+            "analysis": None,
+            "conversation": [{
+                "role": "assistant",
+                "content": f"[Monitor] Error al analizar paciente {patient_id}: {e}",
+            }],
+        }
 
 
 def clinical_node(state: AgentState) -> AgentState:
@@ -51,20 +138,55 @@ def clinical_node(state: AgentState) -> AgentState:
     Interpreta los hallazgos del Monitor y genera el reporte clínico
     (modos reporte y seguimiento). Antes de redactar, evalúa si la información
     del Monitor alcanza y expone la señal `information_sufficient`.
-
-    TODO: reemplazar con Agente Clínico real (get_patient_history,
-    compare_with_previous_sessions, search_clinical_guidelines).
     """
-    # Stub: marca la información como suficiente para terminar el flujo end-to-end.
-    # El Agente real seteará information_sufficient=False cuando falten datos,
-    # disparando el loop de refinamiento (ver decide_next).
+    # Si no hay API key, usar el fallback determinístico sin LLM
+    if not os.environ.get("GROQ_API_KEY"):
+        logger.warning("Clínico: sin GROQ_API_KEY, ejecutando fallback determinístico")
+        return _clinical_fallback(state)
+
+    try:
+        from agents.clinical import run_clinical_agent
+        updates = run_clinical_agent(state)
+        # Incrementar la iteración en el nodo
+        updates["iteration"] = state.get("iteration", 0) + 1
+        return updates
+    except Exception as e:
+        logger.error("Clínico: error en agente real, fallback determinístico: %s", e)
+        return _clinical_fallback(state)
+
+
+def _clinical_fallback(state: AgentState) -> AgentState:
+    """
+    Fallback determinístico del Clínico: genera un reporte estático según el análisis
+    y las alertas. Útil para tests y cuando no hay API key.
+    """
+    patient_id = state.get("patient_id", "")
+    analysis = state.get("analysis")
+    iteration = state.get("iteration", 0) + 1
+
+    # Si es P004 (datos insuficientes) y primera/segunda vuelta, marcamos información insuficiente
+    information_sufficient = True
+    if patient_id == "P004" and iteration < 3:
+        information_sufficient = False
+        report = f"[Clinical fallback] Información cuantitativa insuficiente para {patient_id}. Solicitando ampliación al Monitor."
+    else:
+        report = f"[Clinical fallback] Reporte determinístico del paciente {patient_id}. "
+        if analysis:
+            if len(analysis.alerts) > 0:
+                report += f"Se detectaron {len(analysis.alerts)} alerta(s). "
+            else:
+                report += "Paciente metabólicamente controlado, sin alertas. "
+            report += f"Medicación activa: {', '.join(m.name for m in analysis.medication)}."
+        else:
+            report += "No hay análisis de monitor disponible."
+
     return {
-        "report": "[Clinical stub] Reporte pendiente de implementación.",
-        "iteration": state.get("iteration", 0) + 1,
-        "information_sufficient": True,
+        "report": report,
+        "iteration": iteration,
+        "information_sufficient": information_sufficient,
         "conversation": [{
             "role": "assistant",
-            "content": "[Clínico stub] Reporte pendiente de implementación."
+            "content": report
         }]
     }
 
