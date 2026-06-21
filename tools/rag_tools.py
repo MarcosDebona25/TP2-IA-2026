@@ -1,45 +1,45 @@
 # tools/rag_tools.py
 #
-# Stub de búsqueda RAG en guías clínicas de la ADA (contrato provisional con B).
-# Cuando B entregue, esta herramienta realizará búsquedas vectoriales sobre ChromaDB.
+# Expone las funciones del retriever como tools de LangChain para que el
+# Agente Clínico (C) las pueda invocar dentro de su loop ReAct.
+#
+# El Agente Clínico llama search_clinical_guidelines_tool cuando necesita
+# contextualizar un hallazgo del Monitor con evidencia de las guías ADA/SAD/MSAL.
+#
+# Parámetros tunables documentados en rag/RAG_TUNING.md → sección "LangChain Tools".
 
-def search_clinical_guidelines(query: str) -> str:
-    """Busca fragmentos relevantes de las guías clínicas de la ADA basados en el query.
+from langchain_core.tools import tool
 
-    Retorna extractos en lenguaje natural que fundamentan las decisiones clínicas.
+from rag.retriever import get_rag_fragment, search_clinical_guidelines
+
+
+@tool
+def search_clinical_guidelines_tool(query: str) -> list[str]:
     """
-    q = query.lower()
-    
-    if "hba1c" in q or "aumento" in q or "hemoglobina" in q:
-        return (
-            "ADA Guidelines (HbA1c Target):\n"
-            "- El objetivo general de HbA1c para adultos con diabetes tipo 2 no embarazados es < 7.0% (53 mmol/mol).\n"
-            "- Objetivos menos estrictos (< 8.0%) pueden ser adecuados para pacientes con historial de hipoglucemia severa, expectativa de vida limitada o complicaciones avanzadas.\n"
-            "- Si no se alcanza el objetivo tras 3 meses de monoterapia (Metformina), se debe intensificar con terapia dual agregando un segundo agente (SGLT2i, GLP-1 RA, DPP-4i, etc.) considerando comorbilidades cardiovasculares o renales."
-        )
-    
-    if "hipo" in q or "bajo" in q or "55" in q or "glucosa en ayunas" in q and "ayuna" in q:
-        # Si menciona hipoglucemia o valores bajos
-        if "hipo" in q or "bajo" in q or "55" in q:
-            return (
-                "ADA Guidelines (Hypoglycemia):\n"
-                "- Nivel 1 de hipoglucemia: Glucosa < 70 mg/dL (pero >= 54 mg/dL). Nivel 2 de hipoglucemia: Glucosa < 54 mg/dL.\n"
-                "- En cada consulta médica se debe indagar sobre la frecuencia, severidad y causas de los episodios de hipoglucemia.\n"
-                "- Si el paciente experimenta hipoglucemia clínica o no percibida (especialmente Nivel 2 o 3), se debe reevaluar el tratamiento para disminuir el riesgo de nuevos eventos, ajustando dosis de secretagogos o insulinas si están presentes."
-            )
-            
-    if "presion" in q or "presión" in q or "hipertension" in q or "hipertensión" in q or "sistolica" in q or "diastolica" in q:
-        return (
-            "ADA Guidelines (Blood Pressure):\n"
-            "- El objetivo de presión arterial recomendado para personas con diabetes es < 130/80 mmHg si se puede lograr de manera segura.\n"
-            "- Para pacientes con presión arterial confirmed >= 130/80 mmHg, se debe iniciar tratamiento farmacológico junto con terapia de estilo de vida.\n"
-            "- Los fármacos de primera línea son los IECAs (ej. Enalapril) o ARA-II (ej. Losartán), especialmente en presencia de microalbuminuria."
-        )
-        
-    # Default general
-    return (
-        "ADA Guidelines (General Pharmacologic Therapy):\n"
-        "- La Metformina es el tratamiento de primera línea preferido para la diabetes tipo 2, a menos que existan contraindicaciones.\n"
-        "- Se debe considerar el inicio temprano de terapia combinada para acortar el tiempo hasta el objetivo glucémico.\n"
-        "- El manejo integral debe incluir metas de estilo de vida, control de peso, cese del hábito tabáquico y evaluación del riesgo cardiovascular."
-    )
+    Busca en las guías clínicas (ADA, SAD, MSAL) los fragmentos más relevantes
+    para la consulta dada. Usar cuando se necesite evidencia clínica para
+    interpretar una alerta o métrica fuera de rango.
+
+    Devuelve una lista de fragmentos de texto de las guías.
+
+    Ejemplos de queries efectivas:
+      - "manejo hipoglucemia nivel 1 diabetes tipo 2"
+      - "objetivo HbA1c paciente adulto mayor"
+      - "ajuste metformina insuficiencia renal"
+    """
+    # TUNABLE: k define cuántos fragmentos se recuperan. Ver RAG_TUNING.md → "k (top-k)".
+    # Acá se puede pasar k=5 para consultas amplias o k=2 para consultas muy específicas.
+    return search_clinical_guidelines(query, k=3)
+
+
+@tool
+def get_rag_context_tool(query: str) -> str:
+    """
+    Igual que search_clinical_guidelines_tool pero devuelve un único string
+    formateado y listo para incluir directamente en el prompt del Agente Clínico.
+
+    Preferir esta tool cuando el agente va a usar el contexto en una sola
+    llamada al LLM (evita que el agente tenga que unir la lista manualmente).
+    """
+    # TUNABLE: k define cuántos fragmentos se recuperan. Ver RAG_TUNING.md → "k (top-k)".
+    return get_rag_fragment(query, k=3)

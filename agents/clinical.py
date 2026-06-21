@@ -4,8 +4,9 @@
 #
 # Implementación (contrato A+C):
 #   - Agente ReAct: el LLM (Groq llama-3.3-70b-versatile) interpreta los hallazgos del Monitor,
-#     consulta el historial del paciente en MongoDB y las guías de la ADA vía RAG, y redacta el reporte.
-#   - Las tools son wrappers de stubs para RAG y MongoDB.
+#     consulta el historial del paciente en MongoDB y las guías clínicas vía RAG, y redacta el reporte.
+#   - MongoDB: tools/mongo_tools.py (implementación real).
+#   - RAG: rag/retriever.py + ChromaDB (implementación real).
 #   - El output es una actualización del AgentState.
 
 from __future__ import annotations
@@ -24,8 +25,8 @@ from agents.prompts import (
     CLINICAL_SYSTEM_PROMPT,
 )
 from orchestrator.state import AgentState
-from tools.patient_tools import compare_with_previous_sessions, get_patient_history
-from tools.rag_tools import search_clinical_guidelines
+from tools.mongo_tools import compare_with_previous_sessions, get_patient_history
+from rag.retriever import search_clinical_guidelines
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +41,7 @@ def tool_get_patient_history(patient_id: str) -> str:
     Args:
         patient_id: ID del paciente (ej. "P001")
     """
-    return get_patient_history(patient_id)
+    return str(get_patient_history(patient_id))
 
 
 @tool
@@ -50,17 +51,18 @@ def tool_compare_with_previous_sessions(patient_id: str) -> str:
     Args:
         patient_id: ID del paciente (ej. "P001")
     """
-    return compare_with_previous_sessions(patient_id)
+    return str(compare_with_previous_sessions(patient_id))
 
 
 @tool
 def tool_search_clinical_guidelines(query: str) -> str:
-    """Busca fragmentos relevantes de las guías clínicas de la ADA basados en el query.
+    """Busca fragmentos relevantes de las guías clínicas (ADA, SAD, MSAL) basados en el query.
 
     Args:
         query: consulta de búsqueda (ej. "objetivo HbA1c" o "hipoglucemia severa")
     """
-    return search_clinical_guidelines(query)
+    fragments = search_clinical_guidelines(query, k=3)
+    return "\n\n".join(fragments) if fragments else "No se encontraron fragmentos relevantes."
 
 
 # Lista de tools para bind al LLM
@@ -202,7 +204,7 @@ def run_clinical_agent(state: AgentState) -> dict[str, Any]:
     elif not is_followup:
         # Fallback si no la llamó pero es P001/P002/P003 y requiere comparación
         if analysis and analysis.requires_longitudinal_comparison:
-            comp_str = compare_with_previous_sessions(patient_id)
+            comp_str = str(compare_with_previous_sessions(patient_id))
             updates["longitudinal_comparison"] = {"text": comp_str}
 
     # Si se buscaron guías, agregarlas al contexto

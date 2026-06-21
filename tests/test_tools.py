@@ -1,55 +1,68 @@
 # tests/test_tools.py
 #
-# Pruebas unitarias para las herramientas stubs de MongoDB y RAG.
+# Tests de integración para las tools reales de MongoDB y RAG.
+#
+# Requieren infraestructura activa:
+#   - MongoDB en localhost:27017 con tp2_diabetes.patients cargada (data/load_mongo.py)
+#   - Ollama en localhost:11434 con nomic-embed-text
+#   - ChromaDB indexada (rag/ingest.py)
+#
+# Correr solo en entorno completo:
+#   uv run pytest tests/test_tools.py -m integration
 
 import pytest
 
-from tools.patient_tools import compare_with_previous_sessions, get_patient_history
-from tools.rag_tools import search_clinical_guidelines
+from tools.mongo_tools import compare_with_previous_sessions, get_patient_history
+from rag.retriever import search_clinical_guidelines
 
 
-def test_get_patient_history():
-    # Paciente con historial
-    history_p001 = get_patient_history("P001")
-    assert "Historial del Paciente P001" in history_p001
-    assert "Metformina" in history_p001
-
-    # Paciente sin historial o con mensaje específico
-    history_p004 = get_patient_history("P004")
-    assert "No hay sesiones anteriores" in history_p004
-
-    # Paciente desconocido
-    history_unknown = get_patient_history("PX99")
-    assert "No hay sesiones anteriores" in history_unknown
+@pytest.mark.integration
+def test_get_patient_history_con_datos():
+    doc = get_patient_history("P001")
+    assert isinstance(doc, dict)
+    assert doc.get("patient_id") == "P001"
 
 
-def test_compare_with_previous_sessions():
-    # Paciente con comparación
-    compare_p002 = compare_with_previous_sessions("P002")
-    assert "Comparación Longitudinal P002" in compare_p002
-    assert "HbA1c en aumento" in compare_p002
-
-    # Paciente sin comparación
-    compare_p004 = compare_with_previous_sessions("P004")
-    assert "No se puede realizar una comparación longitudinal" in compare_p004
+@pytest.mark.integration
+def test_get_patient_history_paciente_inexistente():
+    with pytest.raises(ValueError, match="no encontrado"):
+        get_patient_history("PX99")
 
 
-def test_search_clinical_guidelines():
-    # Búsqueda sobre HbA1c
-    rag_hba1c = search_clinical_guidelines("¿Cuál es el objetivo de hba1c?")
-    assert "ADA Guidelines (HbA1c Target)" in rag_hba1c
-    assert "< 7.0%" in rag_hba1c
+@pytest.mark.integration
+def test_compare_with_previous_sessions_sin_metricas():
+    result = compare_with_previous_sessions("P001")
+    assert isinstance(result, dict)
+    assert "sessions_count" in result
+    assert "previous_session" in result
+    assert "deltas" in result
 
-    # Búsqueda sobre hipoglucemia
-    rag_hypo = search_clinical_guidelines("¿Qué hacer con una glucosa de 55?")
-    assert "ADA Guidelines (Hypoglycemia)" in rag_hypo
-    assert "Nivel 1 de hipoglucemia" in rag_hypo
 
-    # Búsqueda sobre presión arterial
-    rag_bp = search_clinical_guidelines("presion arterial recomendada")
-    assert "ADA Guidelines (Blood Pressure)" in rag_bp
-    assert "< 130/80 mmHg" in rag_bp
+@pytest.mark.integration
+def test_compare_with_previous_sessions_con_metricas():
+    result = compare_with_previous_sessions("P001", current_metrics={"hba1c": 7.0})
+    assert isinstance(result, dict)
+    assert "deltas" in result
 
-    # Búsqueda por defecto
-    rag_default = search_clinical_guidelines("ejercicio y dieta")
-    assert "ADA Guidelines (General Pharmacologic Therapy)" in rag_default
+
+@pytest.mark.integration
+def test_compare_with_previous_sessions_sin_historial():
+    result = compare_with_previous_sessions("P004")
+    assert result["previous_session"] is None
+    assert result["deltas"] == {}
+    assert result["sessions_count"] == 0
+
+
+@pytest.mark.integration
+def test_search_clinical_guidelines_retorna_fragmentos():
+    fragments = search_clinical_guidelines("objetivo HbA1c diabetes tipo 2", k=3)
+    assert isinstance(fragments, list)
+    assert len(fragments) > 0
+    assert all(isinstance(f, str) for f in fragments)
+
+
+@pytest.mark.integration
+def test_search_clinical_guidelines_hipoglucemia():
+    fragments = search_clinical_guidelines("manejo hipoglucemia nivel 1", k=2)
+    assert isinstance(fragments, list)
+    assert len(fragments) > 0
