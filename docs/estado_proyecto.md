@@ -11,7 +11,7 @@
 | **A** | Orquestador + Monitor agéntico | 🟢 ~85% | Ninguno (Grafo completo con agentes reales e integración ReAct listos) |
 | **B** | RAG + Datos + MongoDB | 🔴 ~5% | **Cuello de botella crítico** — todo vacío |
 | **C** | Tools Monitor + Clínico | 🟢 ~80% | Ninguno (Agente Clínico real con tools stubs de Mongo y RAG listo) |
-| **D** | Interfaz + Observabilidad + Evaluación | 🟡 ~35% | `components.py` vacío, test cases vacíos, pestaña observabilidad falta |
+| **D** | Interfaz + Observabilidad + Evaluación | 🟢 ~70% | Falta solo el harness de evaluación: `test_tools.py` + `tests/cases/*.json` (Fragmento 3) |
 
 ---
 
@@ -74,19 +74,25 @@
 
 | Archivo | Estado | Detalle |
 |---|---|---|
-| logging_config.py | ✅ Hecho | 11KB. `setup_logging()` + `LoggingCallbackHandler` + dual output (consola + JSONL). Ya tracea nodos stub |
-| app.py | 🟡 Esqueleto funcional | 91 líneas. Chat + reporte + reset. **Falta**: selector paciente dropdown, contexto clínico, botón guardar, reporte como panel principal, pestaña observabilidad |
-| components.py | ⬜ **VACÍO** (0 bytes) | `severity_badge`, `alerts_table`, `trends_view`, `patient_profile`, `format_report`, `load_log_entries` |
-| test_tools.py | ⬜ **VACÍO** (0 bytes) | Tests determinísticos de todas las tools |
-| `tests/cases/*.json` (×3) | ⬜ **VACÍOS** (0 bytes cada uno) | Los 10 casos de prueba (happy/edge/adversarial) |
-| test_graph.py | ✅ Hecho | 7 tests de routing/grafo |
-| test_monitor_tools.py | ✅ Hecho | 17+ tests de patient_tools y threshold_tools |
+| logging_config.py | ✅ Hecho | `setup_logging()` + `LoggingCallbackHandler` + dual output (consola + JSONL). Captura `llm_*`/`tool_*` (con tokens y nombre de tool) en el camino real |
+| app.py | ✅ Hecho | UI Gradio con 2 pestañas: **Consulta clínica** (selector, perfil, contexto, análisis, reporte panel principal, alertas/tendencias, chat de seguimiento, guardar) y **Observabilidad (dev)** (visor de log con filtro + JSON crudo) |
+| components.py | ✅ Hecho | Funciones puras: `severity_badge`, `alerts_table`, `trends_view`, `patient_profile`, `format_report`, `list_patients`, `load_log_entries`, `log_entries_to_rows` |
+| test_tools.py | ⬜ **VACÍO** (0 bytes) | Tests determinísticos de todas las tools (Fragmento 3) |
+| `tests/cases/*.json` (×3) | ⬜ **VACÍOS** (0 bytes cada uno) | Los 10 casos de prueba (happy/edge/adversarial) (Fragmento 3) |
+| test_graph.py | ✅ Hecho (A) | Tests de routing/grafo. ⚠️ `test_refinamiento_loop_insuficiente` falla con el fixture P004 (ver nota abajo) |
+| test_monitor_tools.py | ✅ Hecho (C) | Tests de patient_tools y threshold_tools. Pasan con el fixture `data/sample/*.csv` |
+| data/sample/*.csv | ✅ Hecho (D, provisional) | 4 perfiles P001–P004 (contrato #1) creados por D para destrabar la UI y los tests. Reemplazables por el generador de B |
 
 **Lo que falta de D:**
-1. ⬜ `components.py` — todos los helpers puros
-2. ⬜ `app.py` — layout completo + pestaña observabilidad
-3. ⬜ `test_tools.py` — test runner con parametrización
-4. ⬜ `tests/cases/*.json` — los 10 casos de prueba
+1. ⬜ `test_tools.py` — test runner con parametrización (Fragmento 3)
+2. ⬜ `tests/cases/*.json` — los 10 casos de prueba (Fragmento 3)
+
+> [!NOTE]
+> **Nota A↔D:** el fixture `data/sample/P004.csv` (1 fila = "datos insuficientes") hace que
+> `test_graph.py::test_refinamiento_loop_insuficiente` falle: con `GROQ_API_KEY`, el Agente Clínico
+> real considera que 1 fila es información suficiente (devuelve `iteration=1`, no entra al loop de
+> refinamiento). Antes pasaba "de casualidad" porque P004 no tenía CSV y el análisis quedaba vacío.
+> La detección real de "datos insuficientes" en el agente (no solo en el fallback) es de A/C.
 
 ---
 

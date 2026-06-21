@@ -222,3 +222,9 @@ chroma_db/
 *.csv
 *.pdf
 logs/
+
+# Excepción: el fixture de muestra de D (data/sample/*.csv) SÍ se versiona — materializa el
+# contrato #1 (4 perfiles P001–P004) para que la UI y los tests del Monitor corran sin esperar
+# al generador real de B. Cuando B entregue data/generate_patients.py, su salida (al mismo
+# schema) reemplaza estos archivos y el resto de CSV generados siguen ignorados.
+!data/sample/*.csv

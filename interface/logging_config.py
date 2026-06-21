@@ -211,7 +211,10 @@ class LoggingCallbackHandler(BaseCallbackHandler):
 
     def on_tool_start(self, serialized, input_str, *, run_id, parent_run_id=None,
                       tags=None, metadata=None, inputs=None, **kwargs):
-        name = _resolve_name(serialized, metadata, kwargs)
+        # Para tools queremos el nombre de la TOOL (en `serialized`/`name`), no el del nodo
+        # del grafo (langgraph_node) — por eso no usamos `_resolve_name` con metadata acá.
+        name = (serialized or {}).get("name") or kwargs.get("name") \
+            or _resolve_name(serialized, None, kwargs)
         self._emit(
             "tool_start",
             f"Tool start: {name}",
