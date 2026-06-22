@@ -11,7 +11,9 @@
 
 from __future__ import annotations
 
+import html
 import json
+from collections import deque
 from pathlib import Path
 from typing import Optional
 
@@ -234,22 +236,27 @@ def load_log_entries(
     if not log_path.exists():
         return []
 
-    entries: list[dict] = []
+    group = event_filter if event_filter not in (None, "todos", "all") else None
+
+    # Tail acotado: conservamos solo las últimas `limit` entradas (ya filtradas) con un
+    # deque de tamaño fijo. Así la memoria queda acotada y no materializamos miles de dicts
+    # aunque el .jsonl haya crecido hasta el tope de rotación (5 MB).
+    kept: deque[dict] = deque(maxlen=limit)
     with log_path.open(encoding="utf-8") as fh:
         for line in fh:
             line = line.strip()
             if not line:
                 continue
             try:
-                entries.append(json.loads(line))
+                entry = json.loads(line)
             except json.JSONDecodeError:
                 continue
+            if group and _event_group(entry.get("event", "")) != group:
+                continue
+            kept.append(entry)
 
-    if event_filter and event_filter not in ("todos", "all"):
-        entries = [e for e in entries if _event_group(e.get("event", "")) == event_filter]
-
-    entries.reverse()  # más recientes primero
-    return entries[:limit]
+    kept.reverse()  # más recientes primero
+    return list(kept)
 
 
 def _summarize_entry(entry: dict) -> str:
@@ -273,10 +280,57 @@ def _summarize_entry(entry: dict) -> str:
     return name
 
 
-def log_entries_to_rows(entries: list[dict]) -> list[list[str]]:
-    """Convierte las entradas del log en filas para un gr.Dataframe: [hora, evento, nombre, resumen]."""
-    rows: list[list[str]] = []
+# Largo máximo del texto que se muestra en el resumen colapsado de cada fila. El detalle
+# completo (input/output de tools, prompts y respuestas del LLM) queda en el JSON crudo que
+# se despliega al expandir la fila, así que acá solo acotamos lo que se ve de un vistazo.
+_CELL_MAX = 120
+
+
+def _clip(text: str, n: int = _CELL_MAX) -> str:
+    """Recorta un texto a `n` caracteres para mostrarlo en el resumen de una fila."""
+    text = text or ""
+    return text if len(text) <= n else text[: n - 1] + "…"
+
+
+def log_view_html(entries: list[dict]) -> str:
+    """
+    Render del visor de logs como HTML plano (clase `tp2-logs`, estilada en interface/app.py).
+
+    Cada entrada es un `<details>`: el `<summary>` muestra hora/evento/componente/resumen en
+    una grilla (como una tabla) y, al expandirlo, aparece el JSON crudo completo en un `<pre>`.
+
+    Reemplaza al antiguo gr.Dataframe a propósito: el Dataframe es un widget de planilla
+    editable que tardaba ~15 s en montarse en el navegador al abrir la pestaña. Un bloque de
+    HTML estático con `<details>` se pinta en milisegundos y no necesita gr.State ni un
+    segundo viaje al servidor para ver el detalle (va inline). Tolera la lista vacía.
+    """
+    if not entries:
+        return (
+            "<div class='tp2-logs'><div class='tp2-empty'>"
+            "Sin trazas registradas todavía. Ejecutá un análisis y volvé a refrescar."
+            "</div></div>"
+        )
+
+    out = [
+        "<div class='tp2-logs'>",
+        "<div class='tp2-head'>"
+        "<span>Hora</span><span>Evento</span><span>Componente</span><span>Resumen</span>"
+        "</div>",
+    ]
     for e in entries:
-        ts = (e.get("ts") or "")[11:23]  # solo HH:MM:SS.mmm
-        rows.append([ts, e.get("event", ""), e.get("name", ""), _summarize_entry(e)])
-    return rows
+        ts = html.escape((e.get("ts") or "")[11:23])  # solo HH:MM:SS.mmm
+        event = html.escape(e.get("event", ""))
+        name = html.escape(_clip(e.get("name", "")))
+        summary = html.escape(_clip(_summarize_entry(e)))
+        raw = html.escape(json.dumps(e, ensure_ascii=False, indent=2, default=str))
+        out.append(
+            "<details class='tp2-row'><summary><div class='tp2-cells'>"
+            f"<span class='tp2-ts'>{ts}</span>"
+            f"<span class='tp2-ev'>{event}</span>"
+            f"<span class='tp2-nm' title=\"{name}\">{name}</span>"
+            f"<span class='tp2-sm' title=\"{summary}\">{summary}</span>"
+            "</div></summary>"
+            f"<pre class='tp2-raw'>{raw}</pre></details>"
+        )
+    out.append("</div>")
+    return "".join(out)

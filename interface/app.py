@@ -24,7 +24,7 @@ from interface.components import (
     format_report,
     list_patients,
     load_log_entries,
-    log_entries_to_rows,
+    log_view_html,
     patient_profile,
     trends_view,
 )
@@ -155,18 +155,18 @@ def reset_session():
 # Callbacks de la UI — pestaña "Observabilidad (dev)"
 # -------------------------------------------------------------------
 
-def refresh_logs(event_filter: str):
-    """Recarga las trazas del log y las devuelve como filas + entradas crudas."""
-    entries = load_log_entries(None if event_filter == "todos" else event_filter)
-    return log_entries_to_rows(entries), entries
+# Tope de filas que se renderizan en el visor de logs. 50 trazas recientes alcanzan para
+# el diagnóstico y mantienen la pestaña ágil aunque el .jsonl haya acumulado miles.
+_LOG_VIEW_LIMIT = 50
 
 
-def show_raw_entry(entries: list, evt: gr.SelectData):
-    """Muestra el JSON crudo de la fila seleccionada en la tabla de logs."""
-    try:
-        return entries[evt.index[0]]
-    except Exception:
-        return {}
+def refresh_logs(event_filter: str) -> str:
+    """Recarga las trazas del log y las devuelve como HTML para el visor."""
+    entries = load_log_entries(
+        None if event_filter == "todos" else event_filter,
+        limit=_LOG_VIEW_LIMIT,
+    )
+    return log_view_html(entries)
 
 
 def _langsmith_md() -> str:
@@ -185,6 +185,32 @@ def _langsmith_md() -> str:
 # Construcción de la UI
 # -------------------------------------------------------------------
 
+# Estilos del visor de logs (clase tp2-logs que emite components.log_view_html). Van por el
+# parámetro css= de Blocks —no inline en el HTML dinámico— para no reenviarlos en cada refresco
+# y para que el navegador los aplique de forma garantizada. Usan variables del tema de Gradio
+# (--border-color-primary, etc.) para respetar claro/oscuro.
+_LOG_CSS = """
+.tp2-logs { font-family: var(--font-mono); font-size: 12px; max-height: 460px;
+  overflow-y: auto; border: 1px solid var(--border-color-primary); border-radius: 6px; }
+.tp2-head, .tp2-cells { display: grid; gap: 8px; align-items: center;
+  grid-template-columns: 96px 84px 150px 1fr; padding: 5px 10px; }
+.tp2-head { position: sticky; top: 0; z-index: 1; font-weight: 600;
+  background: var(--background-fill-secondary);
+  border-bottom: 1px solid var(--border-color-primary); }
+.tp2-row { border-bottom: 1px solid var(--border-color-primary); }
+.tp2-row > summary { cursor: pointer; list-style: none; }
+.tp2-row > summary::-webkit-details-marker { display: none; }
+.tp2-row > summary:hover { background: var(--background-fill-secondary); }
+.tp2-ts::before { content: "▸ "; color: var(--body-text-color-subdued); }
+.tp2-row[open] > summary .tp2-ts::before { content: "▾ "; }
+.tp2-nm, .tp2-sm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tp2-ev { color: var(--body-text-color-subdued); }
+.tp2-raw { margin: 0; padding: 8px 12px; white-space: pre-wrap; word-break: break-word;
+  font-size: 11px; background: var(--background-fill-secondary); }
+.tp2-empty { padding: 14px; color: var(--body-text-color-subdued); }
+"""
+
+
 def build_demo() -> gr.Blocks:
     with gr.Blocks(title="Monitor Clínico — Diabetes") as demo:
         gr.Markdown(
@@ -194,7 +220,6 @@ def build_demo() -> gr.Blocks:
         )
 
         thread_state = gr.State("")
-        logs_state = gr.State([])
 
         with gr.Tabs():
             # ---------------- Pestaña 1: Consulta clínica ----------------
@@ -238,7 +263,7 @@ def build_demo() -> gr.Blocks:
                             reset_btn = gr.Button("Nueva sesión")
 
             # ---------------- Pestaña 2: Observabilidad (dev) ----------------
-            with gr.Tab("Observabilidad (dev)"):
+            with gr.Tab("Observabilidad (dev)") as obs_tab:
                 langsmith_md = gr.Markdown(_langsmith_md())
                 with gr.Row():
                     event_filter_dd = gr.Dropdown(
@@ -246,13 +271,13 @@ def build_demo() -> gr.Blocks:
                         value="todos", label="Filtrar por tipo de evento", scale=3,
                     )
                     refresh_btn = gr.Button("🔄 Refrescar", scale=1)
-                logs_df = gr.Dataframe(
-                    headers=["Hora", "Evento", "Componente", "Resumen"],
-                    datatype=["str", "str", "str", "str"],
-                    interactive=False, wrap=True, label="Trazas (logs/agent.jsonl)",
+                gr.Markdown(
+                    "_Trazas (`logs/agent.jsonl`) — hacé clic en una fila para ver su JSON crudo:_"
                 )
-                gr.Markdown("_Hacé clic en una fila para ver su JSON crudo:_")
-                raw_json = gr.JSON(label="Detalle del evento")
+                # Visor liviano: HTML estático con filas expandibles (components.log_view_html).
+                # Reemplaza al gr.Dataframe, cuyo montaje en el navegador congelaba la pestaña
+                # ~15 s la primera vez que se abría. El HTML se pinta en milisegundos.
+                logs_html = gr.HTML(log_view_html([]))
 
         # ---------------- Wiring de eventos ----------------
         patient_dd.change(on_patient_change, inputs=patient_dd, outputs=profile_md)
@@ -276,10 +301,11 @@ def build_demo() -> gr.Blocks:
             outputs=[chatbot, thread_state, report_md, alerts_md, trends_md, context_tb],
         )
 
-        # Observabilidad: refrescar manual, al cambiar el filtro y al cargar la página.
-        for trigger in (refresh_btn.click, event_filter_dd.change, demo.load):
-            trigger(refresh_logs, inputs=event_filter_dd, outputs=[logs_df, logs_state])
-        logs_df.select(show_raw_entry, inputs=logs_state, outputs=raw_json)
+        # Observabilidad: cargar las trazas al ENTRAR a la pestaña (no en el arranque de la
+        # app, para no leer el log si el médico nunca abre la vista dev), más refresco manual
+        # y al cambiar el filtro. El detalle crudo de cada traza se ve expandiendo su fila.
+        for trigger in (refresh_btn.click, event_filter_dd.change, obs_tab.select):
+            trigger(refresh_logs, inputs=event_filter_dd, outputs=logs_html)
 
     return demo
 
@@ -288,4 +314,5 @@ demo = build_demo()
 
 
 if __name__ == "__main__":
-    demo.launch(theme=gr.themes.Soft())
+    # En Gradio 6 css y theme se pasan a launch() (ya no al constructor de Blocks).
+    demo.launch(theme=gr.themes.Soft(), css=_LOG_CSS)
