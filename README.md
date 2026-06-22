@@ -23,9 +23,14 @@ Diseño completo en [docs/TP_2.1 Definicion Conceptual.md](docs/TP_2.1%20Definic
 uv sync                          # 1. instalar dependencias (crea el .venv)
 cp .env.example .env             # 2. configurar entorno y completar GROQ_API_KEY
 uv run pytest                    # 3. correr los tests (esqueleto del grafo end-to-end)
+uv run python -m interface.app   # 4. levantar la interfaz web (http://127.0.0.1:7860)
 ```
 
 En Windows, el paso 2 es `Copy-Item .env.example .env`.
+
+La interfaz tiene dos pestañas: **Consulta clínica** (selección de paciente, análisis, reporte
+y chat de seguimiento) y **Observabilidad (dev)** (visor del log estructurado). Ver
+[docs/interfaz.md](docs/interfaz.md) y [docs/logs.md](docs/logs.md).
 
 ## Estructura del repo
 
@@ -35,8 +40,8 @@ agents/         prompts.py · monitor.py · clinical.py        (agentes: en desa
 tools/          patient_tools.py · threshold_tools.py · rag_tools.py   (en desarrollo)
 rag/            ingest.py · retriever.py                     (en desarrollo)
 data/           generate_patients.py                         (en desarrollo)
-interface/      app.py · components.py · logging_config.py   (en desarrollo)
-tests/          test_graph.py · test_tools.py · cases/   (parcial)
+interface/      app.py (UI Gradio) · components.py (render) · logging_config.py (logs)
+tests/          test_graph.py · test_monitor_tools.py · test_tools.py · cases/   (parcial)
 docs/           definición conceptual, enunciado, división de trabajo, tareas
 ```
 

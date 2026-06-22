@@ -9,9 +9,9 @@
 | Integrante | Responsabilidad | Progreso | Bloqueante |
 |---|---|---|---|
 | **A** | Orquestador + Monitor agéntico | 🟢 ~85% | Ninguno (Grafo completo con agentes reales e integración ReAct listos) |
-| **B** | RAG + Datos + MongoDB | 🔴 ~5% | **Cuello de botella crítico** — todo vacío |
+| **B** | RAG + Datos + MongoDB | 🟢 ~90% | Ninguno — RAG (ingest+retriever), MongoDB (schema+carga) y datos sintéticos mergeados en `main` |
 | **C** | Tools Monitor + Clínico | 🟢 ~80% | Ninguno (Agente Clínico real con tools stubs de Mongo y RAG listo) |
-| **D** | Interfaz + Observabilidad + Evaluación | 🟡 ~35% | `components.py` vacío, test cases vacíos, pestaña observabilidad falta |
+| **D** | Interfaz + Observabilidad + Evaluación | 🟢 ~70% | Falta solo el harness de evaluación: `test_tools.py` + `tests/cases/*.json` (Fragmento 3) |
 
 ---
 
@@ -37,21 +37,19 @@
 
 | Archivo | Estado | Detalle |
 |---|---|---|
-| generate_patients.py | ⬜ **VACÍO** (solo un comentario) | `# Implementar integrante B` — 26 bytes |
-| ingest.py | ⬜ **VACÍO** (0 bytes) | Descarga PDFs + chunking + embeddings → ChromaDB |
-| retriever.py | ⬜ **VACÍO** (0 bytes) | `search_clinical_guidelines()` y `get_rag_fragment()` |
-| rag_tools.py | ⬜ **VACÍO** (0 bytes) | Wrappers LangChain de las tools RAG |
-| MongoDB | ⬜ No existe | Ni schema, ni instancia, ni datos cargados |
+| generate_patients.py | ✅ Hecho | Genera 4 perfiles sintéticos (P001–P004) en CSV |
+| ingest.py | ✅ Hecho | Chunking + embeddings `nomic-embed-text` (Ollama) → ChromaDB persistido en `data/chroma_db/` |
+| retriever.py | ✅ Hecho | `search_clinical_guidelines()` y `get_rag_fragment()` |
+| rag_tools.py | ✅ Hecho | Wrappers LangChain (`search_clinical_guidelines_tool`, `get_rag_context_tool`) |
+| mongo_tools.py | ✅ Hecho | `get_patient_history`, `compare_with_previous_sessions`, `update_patient_history` sobre MongoDB real |
+| MongoDB | ✅ Hecho | Instancia Docker en `localhost:27017`; `data/load_mongo.py` carga `tp2_diabetes.patients` |
 
-> [!CAUTION]
-> **B es el cuello de botella total.** TODO su scope está vacío. Las tools de MongoDB de C están bloqueadas por B, y el RAG del Clínico también. Si B no entrega datos sintéticos y MongoDB **urgente**, el pipeline no puede correr con datos reales para el 22/06.
+> [!NOTE]
+> **B ya está integrado en `main`** (merge `dev/B`). El Agente Clínico de C quedó conectado a
+> `tools/mongo_tools.py` y `rag/retriever.py` reales; se eliminaron los stubs provisionales.
 
-**Lo que falta de B — TODO:**
-1. ⬜ Datos sintéticos (`generate_patients.py`) — 4 perfiles, CSV, 12 meses
-2. ⬜ MongoDB — schema, instancia (Docker), carga de datos
-3. ⬜ RAG ingest — PDFs de guías + embeddings en ChromaDB
-4. ⬜ RAG retriever — `search_clinical_guidelines()`
-5. ⬜ RAG tools — wrappers LangChain
+**Lo que falta de B:** nada bloqueante. Requiere que MongoDB, Ollama y la ingesta de ChromaDB
+estén levantados localmente para correr el pipeline con datos reales (ver README).
 
 ---
 
@@ -62,11 +60,10 @@
 | patient_tools.py | ✅ Hecho | 223 líneas. `load_patient_data`, `calculate_stats`, `get_medication_schedule`, `window_metrics`, `_compute_stats`. Todo funcional sobre `data/sample/` |
 | threshold_tools.py | ✅ Hecho (con A) | Completo |
 | clinical.py | ✅ Hecho | Agente Clínico real con loop ReAct (Modos Reporte y Seguimiento) completo. |
-| Tools MongoDB (en patient_tools) | 🟡 Stubs | `get_patient_history` y `compare_with_previous_sessions` implementadas como stubs funcionales para datos sintéticos (desbloqueado para 22/06). |
+| Tools MongoDB / RAG | ✅ Conectadas | El Agente Clínico usa `tools/mongo_tools.py` y `rag/retriever.py` reales (B mergeado); stubs eliminados. |
 
 **Lo que falta de C:**
-1. ⬜ Conectar MongoDB real una vez que Integrante B provea la base de datos.
-2. ⬜ Conectar RAG real (ChromaDB) una vez que Integrante B provea el retriever.
+1. ⬜ Validar el Agente Clínico end-to-end con MongoDB + ChromaDB reales levantados.
 
 ---
 
@@ -74,19 +71,25 @@
 
 | Archivo | Estado | Detalle |
 |---|---|---|
-| logging_config.py | ✅ Hecho | 11KB. `setup_logging()` + `LoggingCallbackHandler` + dual output (consola + JSONL). Ya tracea nodos stub |
-| app.py | 🟡 Esqueleto funcional | 91 líneas. Chat + reporte + reset. **Falta**: selector paciente dropdown, contexto clínico, botón guardar, reporte como panel principal, pestaña observabilidad |
-| components.py | ⬜ **VACÍO** (0 bytes) | `severity_badge`, `alerts_table`, `trends_view`, `patient_profile`, `format_report`, `load_log_entries` |
-| test_tools.py | ⬜ **VACÍO** (0 bytes) | Tests determinísticos de todas las tools |
-| `tests/cases/*.json` (×3) | ⬜ **VACÍOS** (0 bytes cada uno) | Los 10 casos de prueba (happy/edge/adversarial) |
-| test_graph.py | ✅ Hecho | 7 tests de routing/grafo |
-| test_monitor_tools.py | ✅ Hecho | 17+ tests de patient_tools y threshold_tools |
+| logging_config.py | ✅ Hecho | `setup_logging()` + `LoggingCallbackHandler` + dual output (consola + JSONL). Captura `llm_*`/`tool_*` (con tokens y nombre de tool) en el camino real |
+| app.py | ✅ Hecho | UI Gradio con 2 pestañas: **Consulta clínica** (selector, perfil, contexto, análisis, reporte panel principal, alertas/tendencias, chat de seguimiento, guardar) y **Observabilidad (dev)** (visor de log con filtro + JSON crudo) |
+| components.py | ✅ Hecho | Funciones puras: `severity_badge`, `alerts_table`, `trends_view`, `patient_profile`, `format_report`, `list_patients`, `load_log_entries`, `log_entries_to_rows` |
+| test_tools.py | ⬜ **VACÍO** (0 bytes) | Tests determinísticos de todas las tools (Fragmento 3) |
+| `tests/cases/*.json` (×3) | ⬜ **VACÍOS** (0 bytes cada uno) | Los 10 casos de prueba (happy/edge/adversarial) (Fragmento 3) |
+| test_graph.py | ✅ Hecho (A) | Tests de routing/grafo. ⚠️ `test_refinamiento_loop_insuficiente` falla con el fixture P004 (ver nota abajo) |
+| test_monitor_tools.py | ✅ Hecho (C) | Tests de patient_tools y threshold_tools. Pasan con el fixture `data/sample/*.csv` |
+| data/sample/*.csv | ✅ Hecho (D, provisional) | 4 perfiles P001–P004 (contrato #1) creados por D para destrabar la UI y los tests. Reemplazables por el generador de B |
 
 **Lo que falta de D:**
-1. ⬜ `components.py` — todos los helpers puros
-2. ⬜ `app.py` — layout completo + pestaña observabilidad
-3. ⬜ `test_tools.py` — test runner con parametrización
-4. ⬜ `tests/cases/*.json` — los 10 casos de prueba
+1. ⬜ `test_tools.py` — test runner con parametrización (Fragmento 3)
+2. ⬜ `tests/cases/*.json` — los 10 casos de prueba (Fragmento 3)
+
+> [!NOTE]
+> **Nota A↔D:** el fixture `data/sample/P004.csv` (1 fila = "datos insuficientes") hace que
+> `test_graph.py::test_refinamiento_loop_insuficiente` falle: con `GROQ_API_KEY`, el Agente Clínico
+> real considera que 1 fila es información suficiente (devuelve `iteration=1`, no entra al loop de
+> refinamiento). Antes pasaba "de casualidad" porque P004 no tenía CSV y el análisis quedaba vacío.
+> La detección real de "datos insuficientes" en el agente (no solo en el fallback) es de A/C.
 
 ---
 
