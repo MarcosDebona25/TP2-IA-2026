@@ -6,6 +6,8 @@ pacientes con diabetes tipo 2. Tres agentes coordinados —**Orquestador**, **Mo
 reporte estructurado consultando guías clínicas (RAG). **No emite diagnósticos.**
 
 
+**Link del repositorio remoto**: https://github.com/MarcosDebona25/TP2-IA-2026.git
+
 ---
 
 ## Funcionalidades
