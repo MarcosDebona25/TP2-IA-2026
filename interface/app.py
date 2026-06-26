@@ -137,7 +137,11 @@ def save_session(thread_id: str, history: list):
         return history + [{"role": "assistant", "content": "No hay sesión activa para guardar."}]
     try:
         langgraph_app.invoke({"query": "confirmar"}, _config(thread_id))
-        msg = "💾 Confirmación recibida. La persistencia en MongoDB se conecta cuando B la provea."
+        # NOTA: hoy la rama `save` del grafo termina en END sin persistir. La tool de escritura
+        # (tools/mongo_tools.update_patient_history) YA existe; falta cablear el nodo `save` en
+        # orchestrator/graph.py (pendiente del Orquestador). Ver docs/estado_proyecto.md.
+        msg = ("💾 Confirmación recibida. La persistencia en el historial todavía no está activa: "
+               "falta cablear la rama `save` del grafo a `update_patient_history` (pendiente del Orquestador).")
     except Exception as e:
         msg = f"⚠️ Error al guardar: {e}"
     return history + [

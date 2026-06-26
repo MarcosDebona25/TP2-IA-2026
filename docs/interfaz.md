@@ -32,8 +32,12 @@ Sigue el flujo de la def. conceptual (§2.4):
    - **Alertas detectadas** (tabla con badge de severidad).
    - **Tendencias por métrica** (último, media, mín, máx, Δ, dirección).
 5. **Seguimiento** (chat): preguntas sobre el reporte ya generado (van directo al Clínico).
-6. **Guardar sesión**: confirma la persistencia (rama `save` del Orquestador; la escritura real
-   en MongoDB se conecta cuando B la provea).
+   El Clínico responde **solo** dentro del dominio clínico del paciente; los pedidos ajenos
+   (código, temas generales, etc.) se rechazan cortésmente.
+6. **Guardar sesión**: confirma la sesión (rama `save` del Orquestador). ⚠️ **La escritura
+   real en MongoDB todavía no está cableada**: la rama `save` del grafo termina en `END` sin
+   persistir. La tool `tools/mongo_tools.update_patient_history` ya existe; falta conectar el
+   nodo `save` en `orchestrator/graph.py` (pendiente del Orquestador, ver `docs/estado_proyecto.md`).
 
 ## Pestaña 2 — Observabilidad (dev)
 

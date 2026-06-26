@@ -56,7 +56,7 @@ Abrí **http://127.0.0.1:7860** en el navegador.
 uv run pytest -m "not integration"
 ```
 
-**Esperado:** `45 passed, 7 deselected`. Los 7 deselected son tests de integración que
+**Esperado:** `45 passed, 8 deselected`. Los 8 deselected son tests de integración que
 requieren la infraestructura del modo completo (ver abajo).
 
 ### 2. Interfaz — Consulta clínica
@@ -106,10 +106,15 @@ MongoDB y al RAG. Requiere, además de `uv`:
 
 **2. MongoDB (vía Docker o Local Nativo).** Levantá una instancia en el puerto `27017`:
 
-*   **Opción A (Docker):**
+*   **Opción A (Docker Compose — recomendado):** con **Docker Desktop** abierto, desde la
+    raíz del repo:
     ```bash
-    docker run -d --name tp2-mongo -p 27017:27017 -v tp2-mongo-data:/data/db mongo:7
+    docker compose -f docker/docker-compose.yml up -d
     ```
+    Levanta `mongo:7` (contenedor `tp2-mongo`), persiste en el volumen `tp2-mongo-data` y
+    crea la base `tp2_diabetes` con su índice. Detalle de comandos en
+    [docker/README.md](docker/README.md). *(Equivalente en un solo comando sin Compose:
+    `docker run -d --name tp2-mongo -p 27017:27017 -v tp2-mongo-data:/data/db mongo:7`.)*
 *   **Opción B (Local Nativo - Windows):** Si no usás Docker, podés iniciar MongoDB localmente con los binarios de tu instalación ejecutando:
     ```powershell
     & ".local\mongodb\bin\mongod.exe" --dbpath ".local\mongodb\data" --port 27017 --bind_ip_all --setParameter diagnosticDataCollectionEnabled=false
@@ -145,6 +150,26 @@ uv run pytest -m integration        # requiere MongoDB + Ollama + ChromaDB activ
 
 Con la infraestructura activa, al **Analizar** un paciente en la UI verás reportes redactados por
 el LLM y, en la pestaña *Observabilidad*, la secuencia completa `node_start → tool_* → llm_*`.
+
+### Arranque con todo ya instalado e indexado
+
+Una vez hecha la instalación y la carga inicial (pasos 1–4 de arriba), en el uso cotidiano
+**normalmente alcanza con un solo comando**:
+
+```bash
+uv run python -m interface.app    # interfaz web (modo completo) → http://127.0.0.1:7860
+```
+
+Ollama (app de Windows) y el contenedor de Mongo (`restart: unless-stopped`) se auto-inician al
+encender la PC / abrir Docker Desktop, así que casi siempre solo hace falta ese comando. Si Mongo no quedó levantado, primero:
+
+```bash
+docker compose -f docker/docker-compose.yml up -d
+```
+
+**No** hay que repetir `data/load_mongo.py` ni `rag/ingest.py`: se corren **una sola vez** (los
+datos persisten en el volumen de MongoDB y en `data/chroma_db/`). Solo se re-ejecutan si cambian
+los datos de los pacientes o las guías clínicas.
 
 ---
 

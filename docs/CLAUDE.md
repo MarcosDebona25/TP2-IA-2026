@@ -172,7 +172,7 @@ el LLM razona el *qué* y el *hasta cuándo*; el cálculo es 100% determinístic
 | `tests/conftest.py`, `.env.example` (LangSmith) | ✅ `load_dotenv` + vars de tracing |
 | Tools de Mongo (`get_patient_history`, `compare_*`, `update_*`) | ✅ `tools/mongo_tools.py` real implementado (B); conectado al Agente Clínico |
 | `data/generate_patients.py` | ✅ 4 perfiles sintéticos (P001–P004) generando CSVs en `data/sample/` |
-| MongoDB (schema + instancia + carga) | ✅ instancia Docker en `localhost:27017`; `data/load_mongo.py` carga los 4 pacientes en `tp2_diabetes.patients` |
+| MongoDB (schema + instancia + carga) | ✅ instancia en `localhost:27017` vía **Docker Compose** (`docker/docker-compose.yml`, contenedor `tp2-mongo`, volumen persistente, init script) **o** local nativo; `data/load_mongo.py` carga los 4 pacientes en `tp2_diabetes.patients` |
 | RAG — ingestión (`rag/ingest.py`) | ✅ chunking + embeddings `nomic-embed-text` + ChromaDB persistido en `data/chroma_db/`; parámetros tunables en `rag/RAG_TUNING.md` |
 | RAG — retrieval (`rag/retriever.py`) | ✅ `search_clinical_guidelines()` + `get_rag_fragment()`; probar con `uv run python rag/retriever.py` |
 | RAG — tools LangChain (`tools/rag_tools.py`) | ✅ `search_clinical_guidelines_tool` y `get_rag_context_tool` listos para el Agente Clínico (C) |
@@ -210,7 +210,9 @@ Coordinación crítica:
 2. ~~Implementar `agents/clinical.py` (Agente Clínico real) e integrar en `graph.py`~~ **✅ HECHO**
 3. ~~Conectar MongoDB real y RAG real (B)~~ **✅ HECHO** (merge `dev/B`; stubs eliminados).
 4. ~~Completar la interfaz Gradio + `interface/components.py`~~ **✅ HECHO** (merge UI).
-5. Agregar el nodo de persistencia: rama `save` → `update_patient_history` (hoy `save` termina en `END`).
+5. Agregar el nodo de persistencia (**Integrante A / Orquestador**): rama `save` → `update_patient_history`
+   (hoy `save` termina en `END` sin persistir). La tool `tools/mongo_tools.update_patient_history` ya existe
+   (B/C); falta solo cablear el nodo en `graph.py`. Marcado con `TODO` en `route_from_orchestrator`.
 6. Reemplazar la heurística de `router.py` por clasificación vía LLM.
 7. Completar el harness de evaluación de D: `tests/test_tools.py` parametrizado + `tests/cases/*.json` (10 casos).
 8. Resolver `test_graph.py::test_refinamiento_loop_insuficiente`: el fixture P004 (1 fila) no dispara el loop con el Clínico real (detección de "datos insuficientes" en el agente, no solo en el fallback — A/C).

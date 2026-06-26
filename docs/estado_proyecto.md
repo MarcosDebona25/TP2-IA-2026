@@ -1,6 +1,8 @@
-# Estado del Proyecto TP2-IA — Análisis al 19/06/2026
+# Estado del Proyecto TP2-IA — Análisis al 26/06/2026
 
-> **Contexto:** La 2ª entrega es el **22/06** (en 3 días). La entrega final es el **29/06** (en 10 días).
+> **Contexto:** La 2ª entrega (22/06) ya pasó. La **entrega final es el 29/06** (en 3 días).
+> El backend está completo y el pipeline corre end-to-end con agentes reales. Lo único
+> pendiente con peso de entrega es el harness de evaluación (`tests/cases/*.json`).
 
 ---
 
@@ -8,10 +10,51 @@
 
 | Integrante | Responsabilidad | Progreso | Bloqueante |
 |---|---|---|---|
-| **A** | Orquestador + Monitor agéntico | 🟢 ~85% | Ninguno (Grafo completo con agentes reales e integración ReAct listos) |
-| **B** | RAG + Datos + MongoDB | 🟢 ~90% | Ninguno — RAG (ingest+retriever), MongoDB (schema+carga) y datos sintéticos mergeados en `main` |
-| **C** | Tools Monitor + Clínico | 🟢 ~80% | Ninguno (Agente Clínico real con tools stubs de Mongo y RAG listo) |
-| **D** | Interfaz + Observabilidad + Evaluación | 🟢 ~70% | Falta solo el harness de evaluación: `test_tools.py` + `tests/cases/*.json` (Fragmento 3) |
+| **A** | Orquestador + Monitor agéntico | 🟢 ~90% | Ninguno. Falta solo (opcional) router por LLM y el nodo de persistencia `save`. |
+| **B** | RAG + Datos + MongoDB | 🟢 ~100% | Ninguno. RAG (ingest+retriever), MongoDB (schema+carga, **Docker y local**) y datos sintéticos en `main`. |
+| **C** | Tools Monitor + Clínico | 🟢 ~95% | Ninguno. Agente Clínico real conectado a Mongo+RAG reales. |
+| **D** | Interfaz + Observabilidad + Evaluación | 🟢 ~85% | Falta solo poblar `tests/cases/*.json` (los 10 casos). |
+
+---
+
+## 🧰 Entorno y dependencias (cómo correr el proyecto)
+
+Todo el stack de **Python** lo gestiona **uv** desde `pyproject.toml` (`uv sync`): incluye
+`langchain`, `langgraph`, `langchain-groq`, `chromadb`, `pymongo`, `gradio`, `pydantic`,
+`ollama` (cliente), etc. **No hace falta instalar paquetes a mano.**
+
+| Programa / servicio | ¿Cuándo se necesita? | Estado típico |
+|---|---|---|
+| **uv** | Siempre (entorno + dependencias). | Instalado en `C:\Users\marco\.local\bin`. |
+| **Groq API key** | Modo completo (agentes ReAct reales). | En `.env` (`GROQ_API_KEY`). |
+| **MongoDB** (Docker o local) | Modo completo (historial de pacientes). | Ver abajo: **Docker Compose** o local nativo. |
+| **Ollama** + `nomic-embed-text` | Modo completo (embeddings del RAG / ChromaDB). | **Externo**: instalar desde ollama.com y `ollama pull nomic-embed-text`. |
+| **ChromaDB** | Modo completo (vector store de guías). | Lib Python (vía `uv`); persiste en `data/chroma_db/`. Requiere Ollama para indexar. |
+
+- **Modo básico** (sin servicios externos): solo `uv`. El grafo cae a fallbacks
+  determinísticos y la UI corre sobre el fixture `data/sample/`. Ideal para verificar que
+  arranca. Ver *Inicio rápido* en el [README](../README.md).
+- **Modo completo**: `uv` + Groq + MongoDB + Ollama (embeddings) + ChromaDB indexado.
+
+### MongoDB: Docker Compose **o** local nativo
+
+El historial de pacientes vive en MongoDB (`mongodb://localhost:27017`, db `tp2_diabetes`,
+colección `patients`). Hay dos formas de levantarlo, intercambiables (el código no cambia):
+
+- **Docker Compose (recomendado).** Con Docker Desktop abierto:
+  ```bash
+  docker compose -f docker/docker-compose.yml up -d   # levanta mongo:7 (contenedor tp2-mongo)
+  uv run python data/load_mongo.py                     # carga P001–P004
+  ```
+  Persiste en el volumen `tp2-mongo-data` y crea la base + índice vía `docker/mongo-init.js`.
+  Comandos completos en [docker/README.md](../docker/README.md).
+- **Local nativo (sin Docker).** Iniciar el `mongod` de una instalación local en el puerto
+  27017 (en Windows, con `--setParameter diagnosticDataCollectionEnabled=false` para evitar
+  crashes). Ver la sección *Modo completo → MongoDB* del [README](../README.md).
+
+> En Windows, `MONGO_URI=mongodb://127.0.0.1:27017` (ya viene en `.env`/`.env.example`)
+> evita demoras por la resolución IPv6 de `localhost`. Si MongoDB no está disponible, las
+> tools de Mongo degradan con gracia (historial vacío) y el pipeline sigue corriendo.
 
 ---
 
@@ -21,15 +64,30 @@
 
 | Archivo | Estado | Detalle |
 |---|---|---|
-| state.py | ✅ Hecho | Modelos Pydantic completos (`AgentState`, `PatientMetrics`, `Alert`, `MonitorAnalysis`, `MetricStats`, `Medication`, `TimeRange`, etc.) |
-| graph.py | ✅ Hecho | El grafo corre end-to-end con agentes reales (Monitor y Clínico) e incluye fallbacks determinísticos si no hay API key de Groq. |
-| router.py | 🟡 Heurística | `is_followup_message` e `is_confirmation_message` son heurísticas por keywords. **Falta reemplazar por clasificación vía LLM** |
-| prompts.py | ✅ Hecho | System + human prompts para los 3 agentes completos |
-| monitor.py | ✅ Hecho | Agente Monitor real ReAct completo con vinculación de herramientas clínicas. |
-| threshold_tools.py | ✅ Hecho (con C) | `detect_threshold_violations` con umbrales ADA, hiper e hipoglucemia. 133 líneas, completo |
- 
-**Lo que falta de A:**
-1. ⬜ `orchestrator/router.py` — Clasificación por LLM (puede quedar heurística como fallback)
+| state.py | ✅ Hecho | Modelos Pydantic completos (`AgentState`, `PatientMetrics`, `Alert`, `MonitorAnalysis`, `MetricStats`, `Medication`, `TimeRange`, etc.). Contrato compartido custodiado. |
+| graph.py | ✅ Hecho | Grafo end-to-end con Monitor y Clínico **reales** (ReAct) + fallbacks determinísticos sin API key. Loop de refinamiento (guardrail 3 iteraciones). |
+| router.py | 🟡 Heurística | Routing por keywords. **Opcional**: reemplazar por clasificación vía LLM (queda heurística como fallback). |
+| prompts.py | ✅ Hecho | System + human prompts de los 3 agentes. |
+| monitor.py | ✅ Hecho | Agente Monitor ReAct (ChatGroq + 4 tools LangChain), ensambla `MonitorAnalysis`. |
+| threshold_tools.py | ✅ Hecho (con C) | Umbrales ADA, hiper **e** hipoglucemia. |
+
+**Lo que falta de A (no bloqueante):**
+1. ⬜ Router por LLM en `orchestrator/router.py` (opcional).
+2. ⬜ **Nodo de persistencia (`save`)** — ver nota dedicada abajo.
+
+> [!NOTE]
+> **Estado de "Guardar sesión" (botón de la UI).** Al confirmar el guardado, hoy el grafo
+> enruta a la rama `save`, que **termina en `END` sin escribir nada** ([graph.py](../orchestrator/graph.py),
+> `route_from_orchestrator` → `"save": END`). Por eso la UI avisa que la persistencia "todavía
+> no está activa".
+>
+> **Reparto del trabajo (para que quede claro de quién es):**
+> - La **tool de escritura** `tools/mongo_tools.update_patient_history` **ya está implementada**
+>   (la entregó B/C, opera sobre MongoDB real). **No es un pendiente.**
+> - Lo único que falta es **cablear el nodo `save`** en `orchestrator/graph.py` para que llame a
+>   esa tool con el reporte, las alertas y el `metrics_summary` de la sesión, y luego termine.
+>   Eso es **trabajo del Orquestador (Integrante A)**, no de B ni de D. Marcado con `TODO` en el
+>   código ([graph.py](../orchestrator/graph.py), en `route_from_orchestrator`).
 
 ---
 
@@ -37,19 +95,15 @@
 
 | Archivo | Estado | Detalle |
 |---|---|---|
-| generate_patients.py | ✅ Hecho | Genera 4 perfiles sintéticos (P001–P004) en CSV |
-| ingest.py | ✅ Hecho | Chunking + embeddings `nomic-embed-text` (Ollama) → ChromaDB persistido en `data/chroma_db/` |
-| retriever.py | ✅ Hecho | `search_clinical_guidelines()` y `get_rag_fragment()` |
-| rag_tools.py | ✅ Hecho | Wrappers LangChain (`search_clinical_guidelines_tool`, `get_rag_context_tool`) |
-| mongo_tools.py | ✅ Hecho | `get_patient_history`, `compare_with_previous_sessions`, `update_patient_history` sobre MongoDB real |
-| MongoDB | ✅ Hecho | Instancia Docker en `localhost:27017`; `data/load_mongo.py` carga `tp2_diabetes.patients` |
+| generate_patients.py | ✅ Hecho | 4 perfiles sintéticos (P001–P004) en CSV. |
+| ingest.py | ✅ Hecho | Chunking + embeddings `nomic-embed-text` (Ollama) → ChromaDB en `data/chroma_db/`. Ingesta por lotes (batches de 50), < 30 s. |
+| retriever.py | ✅ Hecho | `search_clinical_guidelines()` y `get_rag_fragment()`. |
+| rag_tools.py | ✅ Hecho | Wrappers LangChain (`search_clinical_guidelines_tool`, `get_rag_context_tool`). |
+| mongo_tools.py | ✅ Hecho | `get_patient_history`, `compare_with_previous_sessions`, `update_patient_history` sobre MongoDB real, con degradación si Mongo no está disponible. |
+| MongoDB (infra) | ✅ Hecho | **Docker Compose** (`docker/docker-compose.yml`, contenedor `tp2-mongo`, volumen persistente, init script) **y** local nativo. `data/load_mongo.py` carga `tp2_diabetes.patients`. |
 
-> [!NOTE]
-> **B ya está integrado en `main`** (merge `dev/B`). El Agente Clínico de C quedó conectado a
-> `tools/mongo_tools.py` y `rag/retriever.py` reales; se eliminaron los stubs provisionales.
-
-**Lo que falta de B:** nada bloqueante. Requiere que MongoDB, Ollama y la ingesta de ChromaDB
-estén levantados localmente para correr el pipeline con datos reales (ver README).
+**Lo que falta de B:** nada bloqueante. El modo completo requiere MongoDB, Ollama y la
+ingesta de ChromaDB levantados (ver sección de entorno y README).
 
 ---
 
@@ -57,13 +111,12 @@ estén levantados localmente para correr el pipeline con datos reales (ver READM
 
 | Archivo | Estado | Detalle |
 |---|---|---|
-| patient_tools.py | ✅ Hecho | 223 líneas. `load_patient_data`, `calculate_stats`, `get_medication_schedule`, `window_metrics`, `_compute_stats`. Todo funcional sobre `data/sample/` |
-| threshold_tools.py | ✅ Hecho (con A) | Completo |
-| clinical.py | ✅ Hecho | Agente Clínico real con loop ReAct (Modos Reporte y Seguimiento) completo. |
-| Tools MongoDB / RAG | ✅ Conectadas | El Agente Clínico usa `tools/mongo_tools.py` y `rag/retriever.py` reales (B mergeado); stubs eliminados. |
+| patient_tools.py | ✅ Hecho | `load_patient_data`, `calculate_stats`, `get_medication_schedule`, `window_metrics`, `_compute_stats`. Determinístico sobre el EHR. |
+| threshold_tools.py | ✅ Hecho (con A) | Completo. |
+| clinical.py | ✅ Hecho | Agente Clínico ReAct (modos Reporte y Seguimiento), conectado a `tools/mongo_tools.py` y `rag/retriever.py` reales (stubs eliminados). |
 
-**Lo que falta de C:**
-1. ⬜ Validar el Agente Clínico end-to-end con MongoDB + ChromaDB reales levantados.
+**Lo que falta de C:** nada bloqueante. Recomendado: validar el Clínico end-to-end con
+MongoDB + ChromaDB reales levantados.
 
 ---
 
@@ -71,56 +124,54 @@ estén levantados localmente para correr el pipeline con datos reales (ver READM
 
 | Archivo | Estado | Detalle |
 |---|---|---|
-| logging_config.py | ✅ Hecho | `setup_logging()` + `LoggingCallbackHandler` + dual output (consola + JSONL). Captura `llm_*`/`tool_*` (con tokens y nombre de tool) en el camino real |
-| app.py | ✅ Hecho | UI Gradio con 2 pestañas: **Consulta clínica** (selector, perfil, contexto, análisis, reporte panel principal, alertas/tendencias, chat de seguimiento, guardar) y **Observabilidad (dev)** (visor de log con filtro + JSON crudo) |
-| components.py | ✅ Hecho | Funciones puras: `severity_badge`, `alerts_table`, `trends_view`, `patient_profile`, `format_report`, `list_patients`, `load_log_entries`, `log_entries_to_rows` |
-| test_tools.py | ⬜ **VACÍO** (0 bytes) | Tests determinísticos de todas las tools (Fragmento 3) |
-| `tests/cases/*.json` (×3) | ⬜ **VACÍOS** (0 bytes cada uno) | Los 10 casos de prueba (happy/edge/adversarial) (Fragmento 3) |
-| test_graph.py | ✅ Hecho (A) | Tests de routing/grafo. ⚠️ `test_refinamiento_loop_insuficiente` falla con el fixture P004 (ver nota abajo) |
-| test_monitor_tools.py | ✅ Hecho (C) | Tests de patient_tools y threshold_tools. Pasan con el fixture `data/sample/*.csv` |
-| data/sample/*.csv | ✅ Hecho (D, provisional) | 4 perfiles P001–P004 (contrato #1) creados por D para destrabar la UI y los tests. Reemplazables por el generador de B |
+| logging_config.py | ✅ Hecho | `setup_logging()` + `LoggingCallbackHandler`, dual output (consola + `logs/agent.jsonl`). Captura `llm_*`/`tool_*` (tokens + nombre de tool). |
+| app.py | ✅ Hecho | UI Gradio: **Consulta clínica** (perfil, contexto, análisis, reporte, alertas/tendencias, chat de seguimiento) y **Observabilidad (dev)** (visor de log + JSON crudo). |
+| components.py | ✅ Hecho | Funciones puras de render (`severity_badge`, `alerts_table`, `trends_view`, `patient_profile`, `format_report`, `list_patients`, `load_log_entries`). |
+| test_tools.py | ✅ Hecho | Tests de integración (`@pytest.mark.integration`) de mongo_tools y RAG; requieren MongoDB + Ollama + ChromaDB. |
+| test_graph.py / test_monitor_tools.py | ✅ Hecho (A/C) | Routing/grafo + tools del Monitor. Ver caveat de `test_refinamiento_loop_insuficiente` abajo. |
+| `tests/cases/*.json` (×3) | ⬜ **VACÍOS** (0 bytes) | Los 10 casos de prueba (happy/edge/adversarial). **Único pendiente con peso de entrega.** |
 
 **Lo que falta de D:**
-1. ⬜ `test_tools.py` — test runner con parametrización (Fragmento 3)
-2. ⬜ `tests/cases/*.json` — los 10 casos de prueba (Fragmento 3)
+1. ⬜ Poblar `tests/cases/happy_path.json`, `edge_cases.json`, `adversarial.json` con los 10 casos.
 
 > [!NOTE]
-> **Nota A↔D:** el fixture `data/sample/P004.csv` (1 fila = "datos insuficientes") hace que
-> `test_graph.py::test_refinamiento_loop_insuficiente` falle: con `GROQ_API_KEY`, el Agente Clínico
-> real considera que 1 fila es información suficiente (devuelve `iteration=1`, no entra al loop de
-> refinamiento). Antes pasaba "de casualidad" porque P004 no tenía CSV y el análisis quedaba vacío.
-> La detección real de "datos insuficientes" en el agente (no solo en el fallback) es de A/C.
+> **Caveat A↔D:** el fixture `data/sample/P004.csv` (1 fila = "datos insuficientes") hace
+> que `test_graph.py::test_refinamiento_loop_insuficiente` falle con `GROQ_API_KEY`: el
+> Clínico real considera 1 fila como información suficiente (`iteration=1`, no entra al
+> loop). La detección real de "datos insuficientes" en el agente (no solo en el fallback)
+> queda como pendiente de A/C.
 
 ---
 
-## 🎯 Siguientes Pasos Prioritarios para el Equipo
+## ✅ Cómo verificar el estado actual
 
-Tras completar la integración de los agentes Monitor y Clínico reales, el equipo debe enfocarse en los siguientes objetivos antes de la entrega del **22/06**:
+```bash
+uv sync                              # entorno (147 paquetes; idempotente)
+uv run pytest -m "not integration"   # esperado: 45 passed, 7 deselected
+uv run python -m interface.app       # UI en http://127.0.0.1:7860
+```
 
-### Plan de acción concreto (priorizado):
-
-#### 🔴 Prioridad 1: Implementar la UI Completa e integrar Componentes (Integrante D)
-* Diseñar y rellenar `interface/components.py` (`severity_badge`, `alerts_table`, `trends_view`, `patient_profile`, `format_report`).
-* Integrar estos componentes en `interface/app.py` para tener una visualización rica de los datos estructurados del estado.
-
-#### 🔴 Prioridad 2: Diseñar y cargar Casos de Prueba (Integrante D)
-* Completar los archivos JSON en `tests/cases/*.json` para cubrir los 10 casos de prueba (happy/edge/adversariales) definidos conceptualmente.
-
-#### 🟡 Prioridad 3: Router por LLM (Integrante A)
-* Reemplazar la heurística basada en palabras clave en `orchestrator/router.py` por clasificación vía LLM usando `ChatGroq` y `ORCHESTRATOR_SYSTEM_PROMPT`.
-
-#### 🟡 Prioridad 4: Conectar MongoDB y RAG reales en cuanto B entregue (Integrante C + B)
-* Integrante B debe proveer la base de datos MongoDB cargada con los datos sintéticos de `generate_patients.py`.
-* Integrante B debe proveer el ingestion y retriever de ChromaDB.
-* Integrante C reemplazará los stubs clínicos por consultas reales a MongoDB y ChromaDB.
+Para el modo completo, además: `.env` con `GROQ_API_KEY`, MongoDB arriba (Docker o local) +
+`uv run python data/load_mongo.py`, Ollama con `nomic-embed-text` + `uv run python rag/ingest.py`,
+y luego `uv run pytest -m integration`.
 
 ---
 
-## ⏰ Resumen de riesgos para el 22/06
+## 🎯 Siguientes pasos prioritarios para el 29/06
+
+| # | Tarea | Resp. | Prioridad |
+|---|---|---|---|
+| 1 | Poblar `tests/cases/*.json` (10 casos happy/edge/adversarial) | D | 🔴 Alta |
+| 2 | Resolver `test_refinamiento_loop_insuficiente` (detección "datos insuficientes" en el agente) | A/C | 🟡 Media |
+| 3 | Nodo de persistencia `save` → `update_patient_history` | A | 🟡 Media |
+| 4 | Router por LLM en `router.py` (queda heurística como fallback) | A | 🟢 Baja (opcional) |
+
+---
+
+## ⏰ Resumen de riesgos para el 29/06
 
 | Riesgo | Severidad | Mitigación |
 |---|---|---|
-| **B no entrega datos ni MongoDB a tiempo** | 🟡 Media (Antes Alta) | **Mitigado:** A+C implementaron stubs realistas de base de datos y guías clínicas. La "rebanada vertical" corre 100% agéntica y determinística sin MongoDB ni ChromaDB. |
-| **Pipeline no corre end-to-end con agentes reales** | 🟢 Resuelto | **Logrado:** Monitor y Clínico ya corren como agentes ReAct reales integrados en el grafo, pasando las pruebas unitarias y de integración correspondientes. |
-| **Componentes de UI y casos de prueba vacíos (D)** | 🔴 Alta | D debe enfocar sus esfuerzos en `interface/components.py`, `interface/app.py` y `tests/cases/*.json` urgentemente, ya que el backend está completamente listo. |
-
+| **Casos de prueba (`tests/cases/*.json`) vacíos** | 🟡 Media | Único entregable pendiente; el backend y la UI ya están listos para alimentarlos. |
+| **Modo completo no reproducible en otra máquina** | 🟢 Bajo | Mitigado: MongoDB vía Docker Compose (`docker/`), `uv sync` para deps, README con pasos de Ollama/ChromaDB. |
+| **Pipeline no corre sin infraestructura** | 🟢 Resuelto | El modo básico corre 100% con fallbacks determinísticos; las tools de Mongo degradan con gracia. |

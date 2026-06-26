@@ -1,0 +1,39 @@
+# docker/docker-compose.yml
+#
+# Servicio MongoDB para el TP2 — historial de pacientes (modo completo).
+# Único servicio externo que corre en contenedor; el resto del stack
+# (LLM Groq, embeddings Ollama, ChromaDB persistido en disco) corre fuera de Docker.
+#
+# Levantar:   docker compose -f docker/docker-compose.yml up -d
+#   (o, desde esta carpeta:  cd docker && docker compose up -d)
+#
+# El código se conecta a mongodb://localhost:27017 (db tp2_diabetes, colección patients).
+# Ver docker/README.md para el detalle de comandos.
+
+name: tp2-ia
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: tp2-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      # Hace que el script de docker/mongo-init.js se ejecute contra esta base
+      # en el primer arranque (cuando el volumen de datos está vacío).
+      MONGO_INITDB_DATABASE: tp2_diabetes
+    volumes:
+      # Persistencia: los datos sobreviven a reinicios y a `down` (no a `down -v`).
+      - tp2-mongo-data:/data/db
+      # Inicialización idempotente de la colección + índice (solo en primer arranque).
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  tp2-mongo-data:

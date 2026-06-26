@@ -10,6 +10,7 @@
 import csv
 import json
 import os
+import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -17,6 +18,11 @@ from pymongo import MongoClient, ASCENDING
 from pymongo.collection import Collection
 
 load_dotenv()
+
+# En Windows la consola usa cp1252 por defecto y no puede imprimir los caracteres
+# Unicode de los mensajes (→, —). Forzar UTF-8 evita un UnicodeEncodeError al cargar.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
 DB_NAME = "tp2_diabetes"
