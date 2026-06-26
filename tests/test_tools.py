@@ -66,3 +66,11 @@ def test_search_clinical_guidelines_hipoglucemia():
     fragments = search_clinical_guidelines("manejo hipoglucemia nivel 1", k=2)
     assert isinstance(fragments, list)
     assert len(fragments) > 0
+
+
+@pytest.mark.integration
+def test_search_clinical_guidelines_incluye_fuente():
+    fragments = search_clinical_guidelines("objetivo HbA1c", k=1)
+    assert len(fragments) > 0
+    assert fragments[0].startswith("[")
+    assert ".md]" in fragments[0].split("\n")[0]

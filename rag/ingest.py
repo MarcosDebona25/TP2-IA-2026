@@ -100,11 +100,15 @@ def build_collection(docs: list[dict], collection: chromadb.Collection) -> int:
     total = 0
     for doc in docs:
         chunks = split_text(doc["text"])
-        for i, chunk in enumerate(chunks):
+        batch_size = 50
+        for idx in range(0, len(chunks), batch_size):
+            batch_chunks = chunks[idx : idx + batch_size]
+            batch_ids = [f"{doc['source']}::chunk{i}" for i in range(idx, min(idx + batch_size, len(chunks)))]
+            batch_metadatas = [{"source": doc["source"], "chunk_index": i} for i in range(idx, min(idx + batch_size, len(chunks)))]
             collection.add(
-                ids=[f"{doc['source']}::chunk{i}"],
-                documents=[chunk],
-                metadatas=[{"source": doc["source"], "chunk_index": i}],
+                ids=batch_ids,
+                documents=batch_chunks,
+                metadatas=batch_metadatas,
             )
         print(f"  {doc['source']}: {len(chunks)} chunks indexados")
         total += len(chunks)

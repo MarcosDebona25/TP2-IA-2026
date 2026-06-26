@@ -8,6 +8,8 @@
 
 from pathlib import Path
 
+import logging
+
 import chromadb
 from chromadb.utils.embedding_functions import OllamaEmbeddingFunction
 
@@ -20,6 +22,8 @@ OLLAMA_URL = "http://localhost:11434"
 
 # TUNABLE: cuántos fragmentos devolver por consulta. Ver RAG_TUNING.md → "k (top-k)".
 DEFAULT_K = 3
+
+logger = logging.getLogger(__name__)
 
 
 def _get_collection() -> chromadb.Collection:
@@ -41,35 +45,41 @@ def search_clinical_guidelines(query: str, k: int = DEFAULT_K) -> list[str]:
     Busca en ChromaDB los `k` fragmentos de guías clínicas más relevantes para `query`.
 
     Devuelve una lista de strings (los fragmentos), ordenados de mayor a menor
-    similitud. Lista vacía si la colección está vacía o no hay resultados.
+    similitud. Lista vacía si la colección está vacía, no hay resultados, o si
+    la infraestructura (Ollama/ChromaDB) no está disponible.
 
     Parámetro tunable principal: `k`. Ver RAG_TUNING.md → "k (top-k)".
     """
-    col = _get_collection()
-    results = col.query(
-        query_texts=[query],
-        n_results=k,
-        # TUNABLE: qué campos incluir en la respuesta. "documents" son los textos;
-        # "metadatas" incluye la fuente (nombre del archivo) y el chunk_index.
-        # Agregar "distances" si querés filtrar por score mínimo (ver RAG_TUNING.md).
-        include=["documents", "metadatas", "distances"],
-    )
+    try:
+        col = _get_collection()
+        results = col.query(
+            query_texts=[query],
+            n_results=k,
+            # TUNABLE: qué campos incluir en la respuesta. "documents" son los textos;
+            # "metadatas" incluye la fuente (nombre del archivo) y el chunk_index.
+            # Agregar "distances" si querés filtrar por score mínimo (ver RAG_TUNING.md).
+            include=["documents", "metadatas", "distances"],
+        )
 
-    documents = results["documents"][0] if results["documents"] else []
-    distances = results["distances"][0] if results["distances"] else []
-    metadatas = results["metadatas"][0] if results["metadatas"] else []
+        documents = results["documents"][0] if results["documents"] else []
+        distances = results["distances"][0] if results["distances"] else []
+        metadatas = results["metadatas"][0] if results["metadatas"] else []
 
-    # TUNABLE: umbral de distancia coseno. Con "cosine" en ChromaDB, la distancia
-    # devuelta es 1 - similitud (0 = idéntico, 2 = opuesto). Filtrar por < 0.5
-    # descarta fragmentos poco relevantes. Ver RAG_TUNING.md → "Umbral de distancia".
-    DISTANCE_THRESHOLD = 1.0  # 1.0 = sin filtro (acepta todo); bajar para ser más estricto
+        # TUNABLE: umbral de distancia coseno. Con "cosine" en ChromaDB, la distancia
+        # devuelta es 1 - similitud (0 = idéntico, 2 = opuesto). Filtrar por < 0.5
+        # descarta fragmentos poco relevantes. Ver RAG_TUNING.md → "Umbral de distancia".
+        DISTANCE_THRESHOLD = 1.0  # 1.0 = sin filtro (acepta todo); bajar para ser más estricto
 
-    filtered = [
-        doc for doc, dist in zip(documents, distances)
-        if dist < DISTANCE_THRESHOLD
-    ]
+        filtered = []
+        for doc, dist, meta in zip(documents, distances, metadatas):
+            if dist < DISTANCE_THRESHOLD:
+                source = meta.get("source", "Guía Desconocida")
+                filtered.append(f"[{source}] {doc}")
 
-    return filtered
+        return filtered
+    except Exception as e:
+        logger.warning("RAG no disponible (Ollama/ChromaDB no accesibles): %s", e)
+        return []
 
 
 def get_rag_fragment(query: str, k: int = DEFAULT_K) -> str:

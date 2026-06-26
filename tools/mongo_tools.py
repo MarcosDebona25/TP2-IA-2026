@@ -17,6 +17,7 @@ from typing import Optional
 from dotenv import load_dotenv
 from pymongo import MongoClient, ASCENDING
 from pymongo.collection import Collection
+from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
 
 load_dotenv()
 
@@ -24,10 +25,33 @@ MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
 DB_NAME = "tp2_diabetes"
 COLLECTION = "patients"
 
+# Timeout corto para no bloquear el agente si MongoDB no está disponible
+_CONNECT_TIMEOUT_MS = 3000
+
+logger = __import__("logging").getLogger(__name__)
+
 
 def _get_collection() -> Collection:
-    client = MongoClient(MONGO_URI)
+    client = MongoClient(
+        MONGO_URI,
+        serverSelectionTimeoutMS=_CONNECT_TIMEOUT_MS,
+        connectTimeoutMS=_CONNECT_TIMEOUT_MS,
+    )
     return client[DB_NAME][COLLECTION]
+
+
+def _mongo_available() -> bool:
+    """Verifica rápidamente si MongoDB está accesible."""
+    try:
+        client = MongoClient(
+            MONGO_URI,
+            serverSelectionTimeoutMS=_CONNECT_TIMEOUT_MS,
+            connectTimeoutMS=_CONNECT_TIMEOUT_MS,
+        )
+        client.admin.command("ping")
+        return True
+    except (ConnectionFailure, ServerSelectionTimeoutError, Exception):
+        return False
 
 
 # -------------------------------------------------------------------
@@ -42,12 +66,18 @@ def get_patient_history(patient_id: str) -> dict:
     Usado por el Agente Clínico para contexto longitudinal: comparaciones entre
     consultas, evolución del tratamiento, etc.
 
-    Lanza ValueError si el paciente no existe en la base.
+    Si MongoDB no está disponible, devuelve un dict vacío indicando que no hay
+    historial (el agente sigue funcionando sin datos longitudinales).
     """
-    col = _get_collection()
-    doc = col.find_one({"patient_id": patient_id}, {"_id": 0})
+    try:
+        col = _get_collection()
+        doc = col.find_one({"patient_id": patient_id}, {"_id": 0})
+    except (ConnectionFailure, ServerSelectionTimeoutError, Exception) as e:
+        logger.warning("MongoDB no disponible, devolviendo historial vacío: %s", e)
+        return {"patient_id": patient_id, "sessions": [], "_mongo_unavailable": True}
+
     if doc is None:
-        raise ValueError(f"Paciente '{patient_id}' no encontrado en MongoDB")
+        raise ValueError(f"Paciente '{patient_id}' no encontrado")
     return doc
 
 
@@ -73,7 +103,8 @@ def compare_with_previous_sessions(
         métricas presentes en ambos dicts.
       - sessions_count: cuántas sesiones tiene el paciente en total.
 
-    Si no hay sesiones previas, `previous_session` es None y `deltas` es {}.
+    Si no hay sesiones previas o MongoDB no está disponible,
+    `previous_session` es None y `deltas` es {}.
     """
     doc = get_patient_history(patient_id)
     sessions = doc.get("sessions", [])
@@ -131,27 +162,32 @@ def update_patient_history(
       - metrics_summary: dict opcional con valores clave de la sesión actual
         (e.g. {"hba1c": 7.2, "glucose_fasting": 130.0}); permite comparación futura.
 
-    Devuelve el session_id asignado.
+    Devuelve el session_id asignado, o un mensaje de error si MongoDB no está disponible.
     """
-    col = _get_collection()
+    try:
+        col = _get_collection()
 
-    doc = col.find_one({"patient_id": patient_id}, {"_id": 0, "patient_id": 1})
-    if doc is None:
-        raise ValueError(f"Paciente '{patient_id}' no encontrado en MongoDB")
+        doc = col.find_one({"patient_id": patient_id}, {"_id": 0, "patient_id": 1})
+        if doc is None:
+            raise ValueError(f"Paciente '{patient_id}' no encontrado en MongoDB")
 
-    session = {
-        "session_id": str(uuid.uuid4()),
-        "date": date.today().isoformat(),
-        "saved_at": datetime.utcnow().isoformat(),
-        "query": query,
-        "report_summary": report[:500] if report else "",  # resumen corto para comparaciones
-        "alerts": alerts,
-        "metrics_summary": metrics_summary or {},
-    }
+        session = {
+            "session_id": str(uuid.uuid4()),
+            "date": date.today().isoformat(),
+            "saved_at": datetime.utcnow().isoformat(),
+            "query": query,
+            "report_summary": report[:500] if report else "",  # resumen corto para comparaciones
+            "alerts": alerts,
+            "metrics_summary": metrics_summary or {},
+        }
 
-    col.update_one(
-        {"patient_id": patient_id},
-        {"$push": {"sessions": session}},
-    )
+        col.update_one(
+            {"patient_id": patient_id},
+            {"$push": {"sessions": session}},
+        )
 
-    return session["session_id"]
+        return session["session_id"]
+    except (ConnectionFailure, ServerSelectionTimeoutError, Exception) as e:
+        logger.warning("MongoDB no disponible, no se pudo guardar la sesión: %s", e)
+        return f"error: MongoDB no disponible ({e})"
+

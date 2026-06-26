@@ -104,15 +104,19 @@ MongoDB y al RAG. Requiere, además de `uv`:
 
 **1. Credenciales.** Completá `GROQ_API_KEY` (y, opcionalmente, `LANGSMITH_*`) en `.env`.
 
-**2. MongoDB (vía Docker).** Levantá una instancia en el puerto `27017`:
+**2. MongoDB (vía Docker o Local Nativo).** Levantá una instancia en el puerto `27017`:
 
-```bash
-docker run -d --name tp2-mongo -p 27017:27017 -v tp2-mongo-data:/data/db mongo:7
-```
+*   **Opción A (Docker):**
+    ```bash
+    docker run -d --name tp2-mongo -p 27017:27017 -v tp2-mongo-data:/data/db mongo:7
+    ```
+*   **Opción B (Local Nativo - Windows):** Si no usás Docker, podés iniciar MongoDB localmente con los binarios de tu instalación ejecutando:
+    ```powershell
+    & ".local\mongodb\bin\mongod.exe" --dbpath ".local\mongodb\data" --port 27017 --bind_ip_all --setParameter diagnosticDataCollectionEnabled=false
+    ```
+    *(El parámetro `--setParameter diagnosticDataCollectionEnabled=false` es fundamental en entornos Windows para prevenir crashes vinculados a la colección de datos de diagnóstico).*
 
-El código se conecta a `mongodb://localhost:27017` por defecto (db `tp2_diabetes`, colección
-`patients`). Si usás otra URI, definí `MONGO_URI` en `.env`. Para frenar/arrancar la instancia
-luego: `docker stop tp2-mongo` / `docker start tp2-mongo`.
+El código se conecta a `mongodb://localhost:27017` por defecto (db `tp2_diabetes`, colección `patients`). Si estás en Windows y experimentás problemas o demoras en la conexión por la resolución IPv6 de localhost, definí `MONGO_URI=mongodb://127.0.0.1:27017` en tu `.env`.
 
 **3. Ollama (embeddings del RAG).** Instalá [Ollama](https://ollama.com/), asegurate de que el
 servicio esté corriendo (`http://localhost:11434`) y descargá el modelo:
@@ -129,9 +133,9 @@ uv run python rag/ingest.py         # indexa las guías clínicas en ChromaDB
 ```
 
 > **Nota sobre la ingesta del RAG.** `data/chroma_db/` está en `.gitignore`, así que un clon
-> nuevo no lo trae: hay que correr `rag/ingest.py` al menos una vez. En cambio, si `data/chroma_db/`
-> ya está poblado, **no re-ejecutes la ingesta**: el script no saltea solo y vuelve a generar el
-> embedding de cada chunk (lo cual puede llevar varios minutos).
+> nuevo no lo trae: hay que correr `rag/ingest.py` al menos una vez. El proceso de indexación
+> está optimizado para subir los chunks a ChromaDB en lotes (batches de 50) y se completa en 
+> menos de 30 segundos. Si `data/chroma_db/` ya está poblado, no es necesario re-ejecutarlo.
 
 ### Verificación del modo completo
 
