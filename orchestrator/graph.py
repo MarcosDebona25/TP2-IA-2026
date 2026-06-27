@@ -1,13 +1,13 @@
 # orchestrator/graph.py
 
 import logging
-import os
 
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
 
 from orchestrator.state import AgentState
 from orchestrator.router import is_followup_message, is_confirmation_message
+from agents.llm_factory import has_api_key
 
 logger = logging.getLogger(__name__)
 
@@ -48,8 +48,8 @@ def monitor_node(state: AgentState) -> AgentState:
     patient_id = state.get("patient_id", "")
 
     # Si no hay API key, usar el fallback determinístico sin LLM
-    if not os.environ.get("GROQ_API_KEY"):
-        logger.warning("Monitor: sin GROQ_API_KEY, ejecutando fallback determinístico")
+    if not has_api_key():
+        logger.warning("Monitor: sin API key, ejecutando fallback determinístico")
         return _monitor_fallback(state)
 
     try:
@@ -140,8 +140,8 @@ def clinical_node(state: AgentState) -> AgentState:
     del Monitor alcanza y expone la señal `information_sufficient`.
     """
     # Si no hay API key, usar el fallback determinístico sin LLM
-    if not os.environ.get("GROQ_API_KEY"):
-        logger.warning("Clínico: sin GROQ_API_KEY, ejecutando fallback determinístico")
+    if not has_api_key():
+        logger.warning("Clínico: sin API key, ejecutando fallback determinístico")
         return _clinical_fallback(state)
 
     try:

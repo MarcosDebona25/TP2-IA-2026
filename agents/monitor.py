@@ -22,7 +22,8 @@ from typing import Optional
 
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.tools import tool
-from langchain_groq import ChatGroq
+
+from agents.llm_factory import build_llm
 
 from agents.prompts import MONITOR_HUMAN_TEMPLATE, MONITOR_SYSTEM_PROMPT
 from orchestrator.state import (
@@ -174,13 +175,9 @@ MONITOR_TOOLS = [
 _MAX_MONITOR_STEPS = 20
 
 
-def _build_monitor_llm() -> ChatGroq:
+def _build_monitor_llm():
     """Construye el LLM del Monitor con las tools bindeadas."""
-    llm = ChatGroq(
-        model="llama-3.3-70b-versatile",
-        temperature=0,  # determinismo en el razonamiento
-    )
-    return llm.bind_tools(MONITOR_TOOLS)
+    return build_llm(MONITOR_TOOLS)
 
 
 def run_monitor_agent(state: AgentState) -> MonitorAnalysis:

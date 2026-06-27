@@ -17,7 +17,8 @@ from typing import Any
 
 from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
 from langchain_core.tools import tool
-from langchain_groq import ChatGroq
+
+from agents.llm_factory import build_llm, extract_content
 
 from agents.prompts import (
     CLINICAL_HUMAN_TEMPLATE_FOLLOWUP,
@@ -75,13 +76,9 @@ CLINICAL_TOOLS = [
 _MAX_CLINICAL_STEPS = 10
 
 
-def _build_clinical_llm() -> ChatGroq:
+def _build_clinical_llm():
     """Construye el LLM del Clínico con las tools bindeadas."""
-    llm = ChatGroq(
-        model="llama-3.3-70b-versatile",
-        temperature=0,  # determinismo y seguridad clínica
-    )
-    return llm.bind_tools(CLINICAL_TOOLS)
+    return build_llm(CLINICAL_TOOLS)
 
 
 def run_clinical_agent(state: AgentState) -> dict[str, Any]:
@@ -181,8 +178,8 @@ def run_clinical_agent(state: AgentState) -> dict[str, Any]:
         logger.warning("Clínico: alcanzó el límite de %d pasos", _MAX_CLINICAL_STEPS)
 
     # Determinar si la información es suficiente analizando la respuesta del LLM
-    final_content = response.content or ""
-    
+    final_content = extract_content(response)
+
     information_sufficient = True
     if "information_sufficient = false" in final_content.lower() or "insuficiente" in final_content.upper():
         information_sufficient = False
