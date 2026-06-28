@@ -1,15 +1,12 @@
 # tests/test_monitor_tools.py
 #
-# Tests DETERMINÍSTICOS de las tools del Monitor sobre el fixture data/sample/ (contrato #1).
-# Mismo input → mismo output. No tocan LLM ni red.
+# Tests determinísticos de las tools del Monitor sobre el fixture data/sample/. Ver
+# docs/tests.md (qué cubre cada archivo y por qué).
 #
 # Estructura (contrato A+C, ver "Flujo de métricas" en docs/CLAUDE.md):
 #   - Núcleos puros (_compute_stats, _detect_violations) → se testean con listas literales.
 #   - Ventaneo (window_metrics) + TimeRange → recorte temporal en un solo lugar.
 #   - Wrappers (calculate_stats, detect_threshold_violations) → por patient_id + timerange.
-#
-# Nota: archivo separado de tests/test_tools.py a propósito — ese queda para el harness
-# de casos JSON del Integrante D (tests/cases/*.json).
 
 from datetime import date
 

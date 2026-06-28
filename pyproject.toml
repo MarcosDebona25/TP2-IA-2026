@@ -31,4 +31,5 @@ pythonpath = ["."]
 testpaths = ["tests"]
 markers = [
     "integration: pruebas que requieren infraestructura externa (MongoDB + Ollama + ChromaDB)",
+    "llm: pruebas estocásticas que invocan el LLM real (requieren API key); ver docs/tests.md",
 ]

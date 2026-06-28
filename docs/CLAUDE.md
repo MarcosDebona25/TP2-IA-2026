@@ -165,7 +165,9 @@ el LLM razona el *qué* y el *hasta cuándo*; el cálculo es 100% determinístic
 | `agents/monitor.py` | ✅ **Agente Monitor real**: loop ReAct (ChatGroq + 4 tools LangChain), fallback determinístico sin API key, produce `MonitorAnalysis` |
 | `agents/clinical.py` | ✅ **Agente Clínico real**: loop ReAct (ChatGroq + 3 tools LangChain), fallback determinístico sin API key, modos reporte/seguimiento |
 | Tools del Monitor (EHR/umbrales) + `data/sample/` | ✅ `patient_tools.py` y `threshold_tools.py` listos y testeados; envueltas como `@tool` LangChain en `agents/monitor.py`; CSVs P001–P004 creados |
-| `tests/test_graph.py` + `tests/test_monitor_tools.py` | ✅ suite de routing/grafo + tools del Monitor (corren con el fixture `data/sample/*.csv`). Ver caveat de `test_refinamiento_loop_insuficiente` en Próximos pasos |
+| Testing (estrategia) | ✅ organizado por objetivo; ver **[docs/tests.md](docs/tests.md)** (tools / plomería / calidad de la IA) |
+| `tests/test_graph.py` | ✅ plomería del grafo en 2 modos: determinístico (fallback forzado, gate de CI) + estocástico (`llm`, LLM real, aserciones laxas) |
+| `tests/test_monitor_tools.py` | ✅ tools del Monitor, determinístico sobre `data/sample/*.csv` |
 | `pyproject.toml`, entorno uv | ✅ deps, entorno uv y tests funcionando listos |
 | Observabilidad (`interface/logging_config.py`) | ✅ logging dual (consola + JSONL) + LangSmith; tracea nodos, routing, `llm_*` y `tool_*` (con nombre de tool y tokens) |
 | `interface/app.py` (Gradio) | ✅ UI completa: 2 pestañas (Consulta clínica + Observabilidad dev) contra el grafo real |
@@ -177,8 +179,8 @@ el LLM razona el *qué* y el *hasta cuándo*; el cálculo es 100% determinístic
 | RAG — retrieval (`rag/retriever.py`) | ✅ `search_clinical_guidelines()` + `get_rag_fragment()`; probar con `uv run python rag/retriever.py` |
 | RAG — tools LangChain (`tools/rag_tools.py`) | ✅ `search_clinical_guidelines_tool` y `get_rag_context_tool` listos para el Agente Clínico (C) |
 | `interface/components.py` | ✅ funciones puras de render (alertas, tendencias, perfil, reporte, visor de logs); testeables sin Gradio |
-| `tests/test_tools.py` | ✅ tests de integración (`@pytest.mark.integration`) de mongo_tools y RAG; requieren MongoDB+Ollama+ChromaDB |
-| `tests/cases/*.json` | ⬜ vacíos (harness de evaluación de D, pendiente) |
+| `tests/test_clinico_tools.py` | ✅ tools del Clínico (mongo_tools + RAG), integración (`@pytest.mark.integration`); requieren MongoDB+Ollama+ChromaDB |
+| `tests/cases/*.json` + `tests/eval_runner.py` | ✅ evaluación **cualitativa** de la IA (9 casos: 3 happy / 3 edge / 3 adversarial); script (no pytest) que vuelca `logs/eval_report.md` con esperado vs. obtenido para puntuar a mano (germen del LLM-as-judge) |
 
 ## División de trabajo
 
@@ -193,7 +195,7 @@ Ver [docs/division_trabajo.md](docs/division_trabajo.md). Resumen:
   eliminados tras integrar B), `agents/clinical.py` (**✅ implementado**, modos reporte y
   seguimiento; conectado a `tools/mongo_tools.py` y `rag/retriever.py` reales).
 - **D — Interfaz + observabilidad + evaluación**: `interface/*.py` (**✅ UI completa**),
-  `tests/test_tools.py` (✅), `tests/cases/*.json` (10 casos, ⬜ pendiente).
+  `tests/test_clinico_tools.py` (✅), evaluación cualitativa `tests/eval_runner.py` + `tests/cases/*.json` (✅; ver [docs/tests.md](docs/tests.md)).
 
 Coordinación crítica:
 - **A ↔ C** sincronizados: A integra en el grafo lo que C implementa; cualquier cambio de
@@ -214,7 +216,6 @@ Coordinación crítica:
    (hoy `save` termina en `END` sin persistir). La tool `tools/mongo_tools.update_patient_history` ya existe
    (B/C); falta solo cablear el nodo en `graph.py`. Marcado con `TODO` en `route_from_orchestrator`.
 6. Reemplazar la heurística de `router.py` por clasificación vía LLM.
-7. Completar el harness de evaluación de D: `tests/test_tools.py` parametrizado + `tests/cases/*.json` (10 casos).
-8. Resolver `test_graph.py::test_refinamiento_loop_insuficiente`: el fixture P004 (1 fila) no dispara el loop con el Clínico real (detección de "datos insuficientes" en el agente, no solo en el fallback — A/C).
-7. Diseñar y cargar los casos de prueba (`tests/cases/*.json`).
+7. ~~Completar el harness de evaluación de D~~ **✅ HECHO**: evaluación cualitativa con `tests/eval_runner.py` + `tests/cases/*.json` (ver [docs/tests.md](docs/tests.md)).
+8. **Detección de "datos insuficientes" en el Agente Clínico real** (A/C): hoy solo el fallback la detecta (P004). No es ya un problema de tests —el gate de `test_graph.py` corre en modo determinístico— sino una brecha de comportamiento del agente; conviene cerrarla para que el loop de refinamiento se dispare también con LLM real.
 ```

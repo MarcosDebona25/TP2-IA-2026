@@ -116,6 +116,12 @@ reporte (stub), chat follow-up y guardar funcionan contra el grafo real con stub
 
 ## Fragmento 3 — Evaluación (`tests/test_tools.py` + `tests/cases/*.json`)
 
+> ⚠️ **Superado.** Este fragmento planteaba un único `test_tools.py` que mezclaba runner de
+> casos + validación de tools + routing. La implementación final separó esas
+> responsabilidades por objetivo (tools / plomería / calidad de la IA) y la evaluación de los
+> casos pasó a ser **cualitativa y manual** (`tests/eval_runner.py`), no determinística. La
+> fuente de verdad actual es **[docs/tests.md](tests.md)**; lo de abajo queda como registro histórico.
+
 Requisito: 5–15 casos (happy path / límite / adversariales) + validación **determinística** de tools.
 
 **Schema de caso** (documentar y congelar; mismo formato en los 3 JSON):

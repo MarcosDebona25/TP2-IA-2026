@@ -40,7 +40,7 @@ rápida para verificar que el proyecto arranca y se comporta como se espera.
 ```bash
 uv sync                              # 1. instala dependencias (crea el .venv)
 cp .env.example .env                 # 2. crea el archivo de entorno (Windows: Copy-Item .env.example .env)
-uv run pytest -m "not integration"   # 3. corre la suite sin tests de infraestructura (~2-3 min)
+uv run pytest -m "not integration and not llm"   # 3. solo gate determinístico, sin infra ni LLM (~2 s)
 uv run python -m interface.app       # 4. levanta la interfaz web
 ```
 
@@ -53,11 +53,12 @@ Abrí **http://127.0.0.1:7860** en el navegador.
 ### 1. Tests
 
 ```bash
-uv run pytest -m "not integration"
+uv run pytest -m "not integration and not llm"
 ```
 
-**Esperado:** `45 passed, 8 deselected`. Los 8 deselected son tests de integración que
-requieren la infraestructura del modo completo (ver abajo).
+**Esperado:** `45 passed, 9 deselected`. Los 9 deselected son los 8 tests de integración
+(requieren la infraestructura del modo completo, ver abajo) + 1 test estocástico que invoca
+el LLM real. Estrategia de testing completa en [docs/tests.md](docs/tests.md).
 
 ### 2. Interfaz — Consulta clínica
 
@@ -182,7 +183,7 @@ tools/          patient_tools.py · threshold_tools.py · mongo_tools.py · rag_
 rag/            ingest.py (indexa en ChromaDB) · retriever.py (búsqueda)
 data/           generate_patients.py · load_mongo.py · guias/ · sample/ (fixture P001-P004)
 interface/      app.py (UI Gradio) · components.py (render) · logging_config.py (logs)
-tests/          test_graph.py · test_monitor_tools.py · test_tools.py (integración) · cases/
+tests/          test_graph.py · test_monitor_tools.py · test_clinico_tools.py (integración) · eval_runner.py · cases/ · ver docs/tests.md
 docs/           definición conceptual, arquitectura (CLAUDE.md), interfaz, logs
 ```
 
@@ -192,8 +193,8 @@ docs/           definición conceptual, arquitectura (CLAUDE.md), interfaz, logs
 
 ```bash
 uv sync                              # instalar / actualizar el entorno
-uv run pytest -m "not integration"   # tests sin infraestructura externa
-uv run pytest                        # toda la suite (requiere el modo completo)
+uv run pytest -m "not integration and not llm"   # gate determinístico (sin infra ni LLM)
+uv run pytest                        # toda la suite (requiere modo completo: infra + API key)
 uv run python -m interface.app       # levantar la interfaz web
 uv lock                              # regenerar el lockfile tras cambiar dependencias
 ```

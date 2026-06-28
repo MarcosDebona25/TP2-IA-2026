@@ -1,14 +1,14 @@
-# tests/test_tools.py
+# tests/test_clinico_tools.py
 #
-# Tests de integración para las tools reales de MongoDB y RAG.
+# Tests de las tools del Agente Clínico (MongoDB + RAG). Ver docs/tests.md.
 #
-# Requieren infraestructura activa:
+# Son de integración (marcador `integration`): requieren infraestructura activa.
 #   - MongoDB en localhost:27017 con tp2_diabetes.patients cargada (data/load_mongo.py)
 #   - Ollama en localhost:11434 con nomic-embed-text
 #   - ChromaDB indexada (rag/ingest.py)
 #
-# Correr solo en entorno completo:
-#   uv run pytest tests/test_tools.py -m integration
+# Correr en entorno completo
+#   uv run pytest tests/test_clinico_tools.py
 
 import pytest
 

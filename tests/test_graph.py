@@ -1,12 +1,25 @@
 # tests/test_graph.py
 #
-# Smoke tests del esqueleto del grafo: verifican que el flujo completo ejecuta
-# de punta a punta con los nodos stub, sin errores, y que el routing y el
-# guardrail del loop de refinamiento se comportan como se espera.
+# Plomería del grafo: routing, comunicación entre nodos y guardrail del loop.
+# Dos modos (ver docs/tests.md):
+#   - DETERMINÍSTICO (default): el fixture autouse fuerza el fallback sin LLM →
+#     rápido y reproducible. Es el gate de CI.
+#   - ESTOCÁSTICO (marcador `llm`): invoca el LLM real con aserciones laxas/
+#     estructurales (valida que los agentes se cablean, no resultados exactos).
 
 import pytest
 
+from agents.llm_factory import has_api_key
 from orchestrator.graph import build_graph, decide_next, route_from_orchestrator
+
+
+@pytest.fixture(autouse=True)
+def _force_fallback(request, monkeypatch):
+    """Modo determinístico salvo en tests marcados `llm` (que usan el LLM real)."""
+    if request.node.get_closest_marker("llm"):
+        return
+    monkeypatch.delenv("GROQ_API_KEY", raising=False)
+    monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
 
 
 @pytest.fixture
@@ -83,4 +96,24 @@ def test_refinamiento_loop_insuficiente(app):
     assert out["report"] is not None
     # Cada vuelta agrega mensajes a la conversación (1 monitor + 1 clínico por vuelta = 6 mensajes)
     assert len(out["conversation"]) == 6
+
+
+# ---- Modo estocástico: el LLM real (plomería, no contenido) ----
+
+@pytest.mark.llm
+def test_pipeline_estocastico_se_cablea(app):
+    """Con LLM real, el pipeline completo corre de punta a punta y respeta el guardrail.
+
+    Aserciones LAXAS a propósito: validan que Monitor y Clínico se comunican y que el
+    grafo termina, no un resultado exacto (eso es no determinístico).
+    """
+    if not has_api_key():
+        pytest.skip("requiere API key (modo estocástico)")
+
+    init = {"patient_id": "P002", "query": "Analizá al paciente", "conversation": []}
+    out = app.invoke(init, _cfg("t-llm"))
+
+    assert out["report"] is not None          # el Clínico produjo un reporte
+    assert len(out["conversation"]) >= 2       # Monitor y Clínico aportaron mensajes
+    assert 1 <= out["iteration"] <= 3          # terminó dentro del guardrail
 

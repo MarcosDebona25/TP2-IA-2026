@@ -1,8 +1,8 @@
 # Estado del Proyecto TP2-IA — Análisis al 26/06/2026
 
 > **Contexto:** La 2ª entrega (22/06) ya pasó. La **entrega final es el 29/06** (en 3 días).
-> El backend está completo y el pipeline corre end-to-end con agentes reales. Lo único
-> pendiente con peso de entrega es el harness de evaluación (`tests/cases/*.json`).
+> El backend está completo y el pipeline corre end-to-end con agentes reales. La evaluación
+> (incluida la cualitativa de la IA) ya está armada; ver [docs/tests.md](tests.md).
 
 ---
 
@@ -13,7 +13,7 @@
 | **A** | Orquestador + Monitor agéntico | 🟢 ~90% | Ninguno. Falta solo (opcional) router por LLM y el nodo de persistencia `save`. |
 | **B** | RAG + Datos + MongoDB | 🟢 ~100% | Ninguno. RAG (ingest+retriever), MongoDB (schema+carga, **Docker y local**) y datos sintéticos en `main`. |
 | **C** | Tools Monitor + Clínico | 🟢 ~95% | Ninguno. Agente Clínico real conectado a Mongo+RAG reales. |
-| **D** | Interfaz + Observabilidad + Evaluación | 🟢 ~85% | Falta solo poblar `tests/cases/*.json` (los 10 casos). |
+| **D** | Interfaz + Observabilidad + Evaluación | 🟢 ~100% | Ninguno. Evaluación cualitativa + tests por objetivo completos ([docs/tests.md](tests.md)). |
 
 ---
 
@@ -127,19 +127,22 @@ MongoDB + ChromaDB reales levantados.
 | logging_config.py | ✅ Hecho | `setup_logging()` + `LoggingCallbackHandler`, dual output (consola + `logs/agent.jsonl`). Captura `llm_*`/`tool_*` (tokens + nombre de tool). |
 | app.py | ✅ Hecho | UI Gradio: **Consulta clínica** (perfil, contexto, análisis, reporte, alertas/tendencias, chat de seguimiento) y **Observabilidad (dev)** (visor de log + JSON crudo). |
 | components.py | ✅ Hecho | Funciones puras de render (`severity_badge`, `alerts_table`, `trends_view`, `patient_profile`, `format_report`, `list_patients`, `load_log_entries`). |
-| test_tools.py | ✅ Hecho | Tests de integración (`@pytest.mark.integration`) de mongo_tools y RAG; requieren MongoDB + Ollama + ChromaDB. |
-| test_graph.py / test_monitor_tools.py | ✅ Hecho (A/C) | Routing/grafo + tools del Monitor. Ver caveat de `test_refinamiento_loop_insuficiente` abajo. |
-| `tests/cases/*.json` (×3) | ⬜ **VACÍOS** (0 bytes) | Los 10 casos de prueba (happy/edge/adversarial). **Único pendiente con peso de entrega.** |
+| test_clinico_tools.py | ✅ Hecho | Tools del Clínico (mongo_tools + RAG), integración (`@pytest.mark.integration`); requieren MongoDB + Ollama + ChromaDB. |
+| test_graph.py / test_monitor_tools.py | ✅ Hecho (A/C) | Plomería del grafo (2 modos) + tools del Monitor. Ver [docs/tests.md](tests.md). |
+| `tests/cases/*.json` + `tests/eval_runner.py` | ✅ Hecho | Evaluación **cualitativa** de la IA (9 casos: 3 happy / 3 edge / 3 adversarial). Script (no pytest) → `logs/eval_report.md` para puntuar a mano. Ver [docs/tests.md](tests.md). |
 
-**Lo que falta de D:**
-1. ⬜ Poblar `tests/cases/happy_path.json`, `edge_cases.json`, `adversarial.json` con los 10 casos.
+**Lo que falta de D:** nada bloqueante. La evaluación quedó completa.
 
 > [!NOTE]
-> **Caveat A↔D:** el fixture `data/sample/P004.csv` (1 fila = "datos insuficientes") hace
-> que `test_graph.py::test_refinamiento_loop_insuficiente` falle con `GROQ_API_KEY`: el
-> Clínico real considera 1 fila como información suficiente (`iteration=1`, no entra al
-> loop). La detección real de "datos insuficientes" en el agente (no solo en el fallback)
-> queda como pendiente de A/C.
+> **Decisión de testing:** los tests se organizan **por objetivo** (tools / plomería del grafo /
+> calidad de la IA), no por taxonomía unit-vs-integración. La evaluación de los ejes
+> happy/edge/adversarial es **cualitativa y manual** (`eval_runner.py`), no un test de pytest.
+> Detalle y fundamentos en **[docs/tests.md](tests.md)**.
+>
+> **Brecha A/C (no de tests):** el Agente Clínico real considera 1 fila (P004) como información
+> suficiente, así que el loop de refinamiento solo se dispara en el fallback. El gate de
+> `test_graph.py` corre en modo determinístico (no se rompe); cerrar la detección en el agente
+> real queda como mejora de comportamiento.
 
 ---
 
@@ -147,7 +150,7 @@ MongoDB + ChromaDB reales levantados.
 
 ```bash
 uv sync                              # entorno (147 paquetes; idempotente)
-uv run pytest -m "not integration"   # esperado: 45 passed, 7 deselected
+uv run pytest -m "not integration and not llm"   # gate determinístico: 45 passed, 9 deselected
 uv run python -m interface.app       # UI en http://127.0.0.1:7860
 ```
 
@@ -161,10 +164,9 @@ y luego `uv run pytest -m integration`.
 
 | # | Tarea | Resp. | Prioridad |
 |---|---|---|---|
-| 1 | Poblar `tests/cases/*.json` (10 casos happy/edge/adversarial) | D | 🔴 Alta |
-| 2 | Resolver `test_refinamiento_loop_insuficiente` (detección "datos insuficientes" en el agente) | A/C | 🟡 Media |
-| 3 | Nodo de persistencia `save` → `update_patient_history` | A | 🟡 Media |
-| 4 | Router por LLM en `router.py` (queda heurística como fallback) | A | 🟢 Baja (opcional) |
+| 1 | Detección de "datos insuficientes" en el Agente Clínico real (hoy solo en el fallback) | A/C | 🟡 Media |
+| 2 | Nodo de persistencia `save` → `update_patient_history` | A | 🟡 Media |
+| 3 | Router por LLM en `router.py` (queda heurística como fallback) | A | 🟢 Baja (opcional) |
 
 ---
 
@@ -172,6 +174,6 @@ y luego `uv run pytest -m integration`.
 
 | Riesgo | Severidad | Mitigación |
 |---|---|---|
-| **Casos de prueba (`tests/cases/*.json`) vacíos** | 🟡 Media | Único entregable pendiente; el backend y la UI ya están listos para alimentarlos. |
+| **Evaluación cualitativa sin correr con LLM** | 🟢 Bajo | Los casos y el `eval_runner.py` están listos; falta solo ejecutarlo con API key y puntuar el artefacto antes del coloquio. |
 | **Modo completo no reproducible en otra máquina** | 🟢 Bajo | Mitigado: MongoDB vía Docker Compose (`docker/`), `uv sync` para deps, README con pasos de Ollama/ChromaDB. |
 | **Pipeline no corre sin infraestructura** | 🟢 Resuelto | El modo básico corre 100% con fallbacks determinísticos; las tools de Mongo degradan con gracia. |
