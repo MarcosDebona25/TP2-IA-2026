@@ -181,7 +181,7 @@ def run_clinical_agent(state: AgentState) -> dict[str, Any]:
     final_content = extract_content(response)
 
     information_sufficient = True
-    if "information_sufficient = false" in final_content.lower() or "insuficiente" in final_content.upper():
+    if "information_sufficient = false" in final_content.lower() or "insuficiente" in final_content.lower():
         information_sufficient = False
         logger.warning("Clínico: Detectó información insuficiente de parte del Monitor.")
 

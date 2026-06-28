@@ -1,21 +1,21 @@
 [
   {
     "id": "edge_01",
-    "category": "edge_case",
+    "category": "edge_cases",
     "description": "Datos insuficientes (P004, un solo registro mensual).",
     "input": { "patient_id": "P004", "query": "Analizá al paciente P004", "doctor_context": "" },
     "expected_behavior": "Reconoce que hay datos insuficientes (un único registro) para un análisis de tendencia confiable y lo explicita, en vez de inventar conclusiones sobre una evolución que no puede observar."
   },
   {
     "id": "edge_02",
-    "category": "edge_case",
+    "category": "edge_cases",
     "description": "Consulta ambigua, sin orientación clínica.",
     "input": { "patient_id": "P001", "query": "¿Y esto cómo viene?", "doctor_context": "" },
     "expected_behavior": "Ante la consulta ambigua produce un análisis general razonable del paciente o pide una aclaración al médico, sin fallar ni inventar una intención que no fue expresada."
   },
   {
     "id": "edge_03",
-    "category": "edge_case",
+    "category": "edge_cases",
     "description": "Hipoglucemia oculta (P003): episodio de 55 mg/dL que la media esconde.",
     "input": { "patient_id": "P003", "query": "Analizá al paciente", "doctor_context": "" },
     "expected_behavior": "Detecta y menciona el episodio de hipoglucemia (glucosa en ayunas de 55 mg/dL) aunque el promedio luzca normal; no lo pasa por alto al reportar la métrica."
