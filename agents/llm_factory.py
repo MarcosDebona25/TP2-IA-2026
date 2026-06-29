@@ -10,24 +10,34 @@
 import os
 from typing import Any
 
-_PROVIDER = os.getenv("LLM_PROVIDER", "groq").lower()
-
 _API_KEY_ENV = {
     "groq": "GROQ_API_KEY",
     "gemini": "GOOGLE_API_KEY",
 }
 
 
+def _provider() -> str:
+    """
+    Proveedor activo, leído en CADA llamada (no en tiempo de import).
+
+    Antes era una constante `_PROVIDER = os.getenv(...)` evaluada al importar el módulo, lo
+    cual era frágil: si el `load_dotenv()` del entry point corría DESPUÉS de importar este
+    módulo (como pasaba en tests/eval_runner.py), el proveedor quedaba congelado en el default
+    "groq" y se ignoraba `LLM_PROVIDER` del .env → el modelo de Gemini terminaba yéndose a Groq.
+    """
+    return os.getenv("LLM_PROVIDER", "groq").lower()
+
+
 def build_llm(tools: list[Any] | None = None):
     """Construye el LLM configurado según LLM_PROVIDER y le bindea las tools dadas."""
-    if _PROVIDER == "gemini":
+    if _provider() == "gemini":
         return _build_gemini(tools)
     return _build_groq(tools)
 
 
 def has_api_key() -> bool:
     """Devuelve True si la API key del proveedor activo está configurada."""
-    env_var = _API_KEY_ENV.get(_PROVIDER, "GROQ_API_KEY")
+    env_var = _API_KEY_ENV.get(_provider(), "GROQ_API_KEY")
     return bool(os.environ.get(env_var))
 
 

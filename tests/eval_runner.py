@@ -31,12 +31,16 @@ from pathlib import Path
 # Permite ejecutarlo como script suelto (sin -m) resolviendo la raíz del proyecto.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+# IMPORTANTE: load_dotenv() ANTES de importar llm_factory / orchestrator.graph. La fábrica de
+# LLM resuelve el proveedor leyendo LLM_PROVIDER, así que el .env tiene que estar cargado antes
+# de cualquier construcción del LLM (igual que en interface/app.py). De lo contrario, con un
+# LLM_PROVIDER=gemini en el .env el evaluador podría terminar usando el proveedor por default.
 from dotenv import load_dotenv
+
+load_dotenv()
 
 from agents.llm_factory import has_api_key
 from orchestrator.graph import build_graph
-
-load_dotenv()
 
 CASES_DIR = Path(__file__).parent / "cases"
 CATEGORIES = ["happy_path", "edge_cases", "adversarial"]
@@ -208,6 +212,12 @@ def main() -> None:
     selected = _select_cases(all_cases, _split_multi(args.category), _split_multi(args.case))
     if not selected:
         sys.exit("❌ Ningún caso coincide con el filtro. Probá --list para ver los disponibles.")
+
+    # Mostramos en consola los WARNING+ del grafo/agentes —incluida la caída al fallback cuando
+    # el LLM falla—. Hace falta un handler explícito en el root porque _DegradeCapture agrega un
+    # handler al logger del grafo, y eso anula el `lastResort` de Python que antes imprimía solo
+    # estos errores. Con basicConfig vuelven a verse (además de quedar marcados como `degraded`).
+    logging.basicConfig(level=logging.WARNING, format="%(levelname)s · %(name)s · %(message)s")
 
     if not has_api_key():
         print("⚠️  No hay API key: el grafo correría en fallback determinístico y la "
