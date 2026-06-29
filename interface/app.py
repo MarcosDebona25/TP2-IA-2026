@@ -332,9 +332,9 @@ _APP_CSS = """
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 6px 18px rgba(15, 23, 42, 0.06); }
 .tp2-toolbar { padding-bottom: 20px; }
 
-/* Perfil del paciente: tarjeta fina con barra de acento sobria */
+/* Perfil del paciente: tarjeta fina con borde neutro uniforme */
 .tp2-profile { padding: 12px 18px !important; border: 1px solid var(--border-color-primary);
-  border-left: 4px solid var(--primary-500); border-radius: 12px;
+  border-radius: 12px;
   background: var(--block-background-fill);
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04); }
 
@@ -401,18 +401,16 @@ _APP_CSS = """
 .tp2-empty { padding: 14px; color: var(--body-text-color-subdued); }
 
 /* ===== Evaluación (pestaña de comparación esperado vs. obtenido) ===== */
-/* Tira de contexto del caso: tarjeta fina con barra de acento, igual que el perfil. */
+/* Tira de contexto del caso: tarjeta fina con borde neutro uniforme, igual que el perfil. */
 .tp2-eval-context { padding: 12px 18px !important; border: 1px solid var(--border-color-primary);
-  border-left: 4px solid var(--primary-500); border-radius: 12px;
+  border-radius: 12px;
   background: var(--block-background-fill);
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04); margin: 6px 0 4px; }
 .tp2-eval-context h4 { margin: 0 0 6px; }
 /* Las dos columnas a la misma altura, con scroll interno para reportes largos. */
 .tp2-eval-panel { height: 100%; }
 .tp2-eval-expected, .tp2-eval-obtained { max-height: 540px; overflow-y: auto;
-  padding: 4px 4px 4px 12px; border-left: 3px solid transparent; }
-.tp2-eval-expected { border-left-color: var(--primary-400); }
-.tp2-eval-obtained { border-left-color: #16a34a; }  /* verde sobrio para "obtenido" */
+  padding: 4px; }
 """
 
 
