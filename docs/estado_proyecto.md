@@ -125,11 +125,11 @@ MongoDB + ChromaDB reales levantados.
 | Archivo | Estado | Detalle |
 |---|---|---|
 | logging_config.py | ✅ Hecho | `setup_logging()` + `LoggingCallbackHandler`, dual output (consola + `logs/agent.jsonl`). Captura `llm_*`/`tool_*` (tokens + nombre de tool). |
-| app.py | ✅ Hecho | UI Gradio: **Consulta clínica** (perfil, contexto, análisis, reporte, alertas/tendencias, chat de seguimiento) y **Observabilidad (dev)** (visor de log + JSON crudo). |
-| components.py | ✅ Hecho | Funciones puras de render (`severity_badge`, `alerts_table`, `trends_view`, `patient_profile`, `format_report`, `list_patients`, `load_log_entries`). |
+| app.py | ✅ Hecho | UI Gradio: **Consulta clínica** (perfil, contexto, análisis, reporte, alertas/tendencias, chat de seguimiento), **Observabilidad (dev)** (visor de log + JSON crudo) y **Evaluación** (comparación esperado vs. obtenido desde `logs/eval_report.json`). |
+| components.py | ✅ Hecho | Funciones puras de render (`severity_badge`, `alerts_table`, `trends_view`, `patient_profile`, `format_report`, `list_patients`, `load_log_entries`, y el visor de evaluación: `load_eval_history`, `eval_history_summary_md`, `eval_run_choices`, `get_eval_run`, `eval_summary_md`, `eval_case_choices`, `eval_case_view`). |
 | test_clinico_tools.py | ✅ Hecho | Tools del Clínico (mongo_tools + RAG), integración (`@pytest.mark.integration`); requieren MongoDB + Ollama + ChromaDB. |
 | test_graph.py / test_monitor_tools.py | ✅ Hecho (A/C) | Plomería del grafo (2 modos) + tools del Monitor. Ver [docs/tests.md](tests.md). |
-| `tests/cases/*.json` + `tests/eval_runner.py` | ✅ Hecho | Evaluación **cualitativa** de la IA (9 casos: 3 happy / 3 edge / 3 adversarial). Script (no pytest) → `logs/eval_report.md` para puntuar a mano. Ver [docs/tests.md](tests.md). |
+| `tests/cases/*.json` + `tests/eval_runner.py` | ✅ Hecho | Evaluación **cualitativa** de la IA (9 casos: 3 happy / 3 edge / 3 adversarial). Script (no pytest) → `logs/eval_report.json`, comparable desde la pestaña **Evaluación** de la UI. Ver [docs/tests.md](tests.md). |
 
 **Lo que falta de D:** nada bloqueante. La evaluación quedó completa.
 

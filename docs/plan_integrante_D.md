@@ -70,9 +70,14 @@ Antes de codear: confirmar firmas exactas de los hooks de `BaseCallbackHandler` 
 Cubrir el flujo de la def. conceptual (2.4): selección de paciente → perfil resumido → contexto
 clínico → consulta → reporte (panel principal) + chat de seguimiento (panel secundario) → guardar.
 
-La UI se organiza en **`gr.Tabs()`** con dos pestañas:
+La UI se organiza en **`gr.Tabs()`** con tres pestañas:
 - **Pestaña "Consulta clínica"** — el flujo del médico (detallado abajo).
 - **Pestaña "Observabilidad (dev)"** — visor de logs para el usuario técnico (detallado abajo).
+- **Pestaña "Evaluación"** — comparación esperado vs. obtenido de los casos de `tests/cases/*.json`,
+  leída del **historial** `logs/eval_report.json` (array de corridas append-only) que genera
+  `tests/eval_runner.py` (selector de corrida + selector de caso + resumen + dos paneles lado a lado).
+  Helpers puros en `interface/components.py` (`load_eval_history`, `eval_history_summary_md`,
+  `eval_run_choices`, `get_eval_run`, `eval_summary_md`, `eval_case_choices`, `eval_case_view`).
 
 **`interface/app.py`** (refinar el esqueleto actual, que ya conecta a `orchestrator.graph.app`):
 - **Selector de paciente** (`gr.Dropdown`): lista mock de IDs por ahora (de `data/` cuando B entregue).

@@ -156,7 +156,7 @@ el LLM razona el *qué* y el *hasta cuándo*; el cálculo es 100% determinístic
 - Toda salida clínica incluye el disclaimer obligatorio (ver `prompts.py`).
 - Las tools del Monitor son **determinísticas**; validarlas con tests determinísticos.
 
-## Estado de implementación (al 2026-06-21)
+## Estado de implementación (al 2026-06-28)
 
 | Módulo | Estado |
 |---|---|
@@ -170,7 +170,7 @@ el LLM razona el *qué* y el *hasta cuándo*; el cálculo es 100% determinístic
 | `tests/test_monitor_tools.py` | ✅ tools del Monitor, determinístico sobre `data/sample/*.csv` |
 | `pyproject.toml`, entorno uv | ✅ deps, entorno uv y tests funcionando listos |
 | Observabilidad (`interface/logging_config.py`) | ✅ logging dual (consola + JSONL) + LangSmith; tracea nodos, routing, `llm_*` y `tool_*` (con nombre de tool y tokens) |
-| `interface/app.py` (Gradio) | ✅ UI completa: 2 pestañas (Consulta clínica + Observabilidad dev) contra el grafo real |
+| `interface/app.py` (Gradio) | ✅ UI completa: 3 pestañas (Consulta clínica + Observabilidad dev + Evaluación) contra el grafo real |
 | `tests/conftest.py`, `.env.example` (LangSmith) | ✅ `load_dotenv` + vars de tracing |
 | Tools de Mongo (`get_patient_history`, `compare_*`, `update_*`) | ✅ `tools/mongo_tools.py` real implementado (B); conectado al Agente Clínico |
 | `data/generate_patients.py` | ✅ 4 perfiles sintéticos (P001–P004) generando CSVs en `data/sample/` |
@@ -178,9 +178,9 @@ el LLM razona el *qué* y el *hasta cuándo*; el cálculo es 100% determinístic
 | RAG — ingestión (`rag/ingest.py`) | ✅ chunking + embeddings `nomic-embed-text` + ChromaDB persistido en `data/chroma_db/`; parámetros tunables en `rag/RAG_TUNING.md` |
 | RAG — retrieval (`rag/retriever.py`) | ✅ `search_clinical_guidelines()` + `get_rag_fragment()`; probar con `uv run python rag/retriever.py` |
 | RAG — tools LangChain (`tools/rag_tools.py`) | ✅ `search_clinical_guidelines_tool` y `get_rag_context_tool` listos para el Agente Clínico (C) |
-| `interface/components.py` | ✅ funciones puras de render (alertas, tendencias, perfil, reporte, visor de logs); testeables sin Gradio |
+| `interface/components.py` | ✅ funciones puras de render (alertas, tendencias, perfil, reporte, visor de logs, visor de evaluación); testeables sin Gradio |
 | `tests/test_clinico_tools.py` | ✅ tools del Clínico (mongo_tools + RAG), integración (`@pytest.mark.integration`); requieren MongoDB+Ollama+ChromaDB |
-| `tests/cases/*.json` + `tests/eval_runner.py` | ✅ evaluación **cualitativa** de la IA (9 casos: 3 happy / 3 edge / 3 adversarial); script (no pytest) que vuelca `logs/eval_report.md` con esperado vs. obtenido para puntuar a mano (germen del LLM-as-judge) |
+| `tests/cases/*.json` + `tests/eval_runner.py` | ✅ evaluación **cualitativa** de la IA (9 casos: 3 happy / 3 edge / 3 adversarial); script (no pytest) que vuelca `logs/eval_report.json` con esperado vs. obtenido; se lee desde la pestaña **Evaluación** de la UI Gradio (selector de corrida + caso) para comparar a ojo (germen del LLM-as-judge). Flags `-c/--category`, `--case`, `--list`, `--overwrite`; el JSON es un **historial append-only** (cada corrida = un elemento del array) para correr de a un caso sin agotar tokens. Cada caso lleva `status` (`ok`/`degraded`/`error`): **`degraded`** = el LLM falló y el grafo cayó al fallback determinístico (salida que NO refleja al modelo), detectado capturando los errores de `orchestrator.graph` |
 
 ## División de trabajo
 

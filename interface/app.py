@@ -21,8 +21,16 @@ from orchestrator.graph import app as langgraph_app
 from interface.logging_config import setup_logging, get_callbacks, tracing_status
 from interface.components import (
     alerts_table,
+    eval_case_choices,
+    eval_case_view,
+    eval_history_summary_md,
+    eval_run_choices,
+    eval_summary_md,
+    find_eval_case,
     format_report,
+    get_eval_run,
     list_patients,
+    load_eval_history,
     load_log_entries,
     log_view_html,
     patient_profile,
@@ -186,6 +194,53 @@ def _langsmith_md() -> str:
 
 
 # -------------------------------------------------------------------
+# Callbacks de la UI — pestaña "Evaluación"
+# -------------------------------------------------------------------
+
+def _eval_case_panels(run, case_id=None):
+    """(case_dd update, contexto, esperado, obtenido) para una corrida y caso dados."""
+    case_choices = eval_case_choices(run)
+    first = find_eval_case(run, case_id)
+    case_id = first.get("id") if first else None
+    context, expected, obtained = eval_case_view(run, case_id)
+    return gr.update(choices=case_choices, value=case_id), context, expected, obtained
+
+
+def load_eval():
+    """
+    Lee el historial de logs/eval_report.json y prepara la pestaña: resumen del historial,
+    selector de corrida (última seleccionada), selector de caso y la comparación del primer
+    caso de esa corrida. Se dispara al entrar a la pestaña y al refrescar.
+    """
+    history = load_eval_history()
+    run_choices = eval_run_choices(history)
+    latest_idx = (len(history) - 1) if history else None
+    run = get_eval_run(history, latest_idx)
+    case_dd_upd, context, expected, obtained = _eval_case_panels(run)
+    return (
+        history,                                          # eval_state
+        eval_history_summary_md(history),                 # eval_history_summary
+        gr.update(choices=run_choices, value=latest_idx), # eval_run_dd
+        eval_summary_md(run),                             # eval_summary (de la corrida)
+        case_dd_upd,                                      # eval_case_dd
+        context, expected, obtained,                      # paneles
+    )
+
+
+def select_run(history, run_idx):
+    """Al elegir otra corrida: re-renderiza su resumen, su selector de casos y el primer caso."""
+    run = get_eval_run(history, run_idx)
+    case_dd_upd, context, expected, obtained = _eval_case_panels(run)
+    return eval_summary_md(run), case_dd_upd, context, expected, obtained
+
+
+def show_eval_case(history, run_idx, case_id):
+    """Re-renderiza la comparación al elegir otro caso dentro de la corrida actual."""
+    run = get_eval_run(history, run_idx)
+    return eval_case_view(run, case_id)
+
+
+# -------------------------------------------------------------------
 # Construcción de la UI
 # -------------------------------------------------------------------
 
@@ -344,6 +399,20 @@ _APP_CSS = """
 .tp2-raw { margin: 0; padding: 8px 12px; white-space: pre-wrap; word-break: break-word;
   font-size: 11px; background: var(--background-fill-secondary); }
 .tp2-empty { padding: 14px; color: var(--body-text-color-subdued); }
+
+/* ===== Evaluación (pestaña de comparación esperado vs. obtenido) ===== */
+/* Tira de contexto del caso: tarjeta fina con barra de acento, igual que el perfil. */
+.tp2-eval-context { padding: 12px 18px !important; border: 1px solid var(--border-color-primary);
+  border-left: 4px solid var(--primary-500); border-radius: 12px;
+  background: var(--block-background-fill);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04); margin: 6px 0 4px; }
+.tp2-eval-context h4 { margin: 0 0 6px; }
+/* Las dos columnas a la misma altura, con scroll interno para reportes largos. */
+.tp2-eval-panel { height: 100%; }
+.tp2-eval-expected, .tp2-eval-obtained { max-height: 540px; overflow-y: auto;
+  padding: 4px 4px 4px 12px; border-left: 3px solid transparent; }
+.tp2-eval-expected { border-left-color: var(--primary-400); }
+.tp2-eval-obtained { border-left-color: #16a34a; }  /* verde sobrio para "obtenido" */
 """
 
 
@@ -428,6 +497,40 @@ def build_demo() -> gr.Blocks:
                 # ~15 s la primera vez que se abría. El HTML se pinta en milisegundos.
                 logs_html = gr.HTML(log_view_html([]))
 
+            # ---------------- Pestaña 3: Evaluación (dev) ----------------
+            # Lee el artefacto logs/eval_report.json (lo produce tests/eval_runner.py) y muestra
+            # una comparación clara esperado vs. obtenido por caso, para puntuar la calidad a ojo.
+            with gr.Tab("🧪  Evaluación") as eval_tab:
+                eval_state = gr.State([])  # historial de corridas cargado (lista)
+                with gr.Row():
+                    eval_history_summary = gr.Markdown(eval_history_summary_md(None), scale=4)
+                    eval_refresh_btn = gr.Button("🔄 Refrescar", scale=1)
+                with gr.Row():
+                    eval_run_dd = gr.Dropdown(
+                        choices=[], label="Corrida", scale=2,
+                        info="Cada ejecución de eval_runner.py agrega una corrida al historial.",
+                    )
+                    eval_case_dd = gr.Dropdown(
+                        choices=[], label="Caso de evaluación", scale=3,
+                        info="Casos evaluados en la corrida seleccionada.",
+                    )
+                eval_summary = gr.Markdown(eval_summary_md(None))
+                eval_context_md = gr.Markdown(
+                    "_Seleccioná un caso para ver la comparación._",
+                    elem_classes="tp2-eval-context",
+                )
+                with gr.Row(equal_height=True):
+                    with gr.Column(scale=1):
+                        with gr.Column(elem_classes="tp2-card tp2-eval-panel"):
+                            gr.Markdown("### ✅ Comportamiento esperado",
+                                        elem_classes="tp2-section-title")
+                            eval_expected_md = gr.Markdown("", elem_classes="tp2-eval-expected")
+                    with gr.Column(scale=1):
+                        with gr.Column(elem_classes="tp2-card tp2-eval-panel"):
+                            gr.Markdown("### 🔍 Salida obtenida",
+                                        elem_classes="tp2-section-title")
+                            eval_obtained_md = gr.Markdown("", elem_classes="tp2-eval-obtained")
+
         # ---------------- Wiring de eventos ----------------
         patient_dd.change(on_patient_change, inputs=patient_dd, outputs=profile_md)
 
@@ -455,6 +558,30 @@ def build_demo() -> gr.Blocks:
         # y al cambiar el filtro. El detalle crudo de cada traza se ve expandiendo su fila.
         for trigger in (refresh_btn.click, event_filter_dd.change, obs_tab.select):
             trigger(refresh_logs, inputs=event_filter_dd, outputs=logs_html)
+
+        # Evaluación: al ENTRAR a la pestaña y al refrescar, cargar el historial (resumen +
+        # selector de corrida + selector de caso + comparación del primer caso de la última
+        # corrida). Al cambiar de corrida se re-arma su resumen/casos; al cambiar de caso, solo
+        # la comparación.
+        eval_load_outputs = [
+            eval_state, eval_history_summary, eval_run_dd, eval_summary, eval_case_dd,
+            eval_context_md, eval_expected_md, eval_obtained_md,
+        ]
+        for trigger in (eval_refresh_btn.click, eval_tab.select):
+            trigger(load_eval, outputs=eval_load_outputs)
+
+        eval_run_dd.change(
+            select_run,
+            inputs=[eval_state, eval_run_dd],
+            outputs=[eval_summary, eval_case_dd,
+                     eval_context_md, eval_expected_md, eval_obtained_md],
+        )
+
+        eval_case_dd.change(
+            show_eval_case,
+            inputs=[eval_state, eval_run_dd, eval_case_dd],
+            outputs=[eval_context_md, eval_expected_md, eval_obtained_md],
+        )
 
     return demo
 

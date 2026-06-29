@@ -25,7 +25,10 @@ from orchestrator.state import (
     PatientMetrics,
 )
 from tools.patient_tools import SAMPLE_DATA_DIR
-from interface.logging_config import LOG_FILE
+from interface.logging_config import LOG_DIR, LOG_FILE
+
+# Artefacto que produce tests/eval_runner.py y consume la pestaña "Evaluación".
+EVAL_REPORT_FILE = LOG_DIR / "eval_report.json"
 
 # -------------------------------------------------------------------
 # Etiquetas legibles y formato
@@ -334,3 +337,245 @@ def log_view_html(entries: list[dict]) -> str:
         )
     out.append("</div>")
     return "".join(out)
+
+
+# -------------------------------------------------------------------
+# Visor de evaluación cualitativa (pestaña "Evaluación")
+# -------------------------------------------------------------------
+#
+# Lee el artefacto JSON que produce tests/eval_runner.py (logs/eval_report.json): un HISTORIAL
+# de corridas (array de objetos-corrida). Cada corrida tiene su propio set de casos evaluados.
+# La UI ofrece un selector de corrida + un selector de caso, y compara "esperado vs. obtenido".
+# Como el resto del módulo, son funciones puras (string in → string out), testeables sin Gradio.
+
+# Etiqueta legible + emoji por categoría de caso (las 3 del enunciado).
+EVAL_CATEGORY_LABELS: dict[str, str] = {
+    "happy_path": "🟢 Happy path",
+    "edge_cases": "🟠 Edge case",
+    "adversarial": "🔴 Adversarial",
+}
+
+_RUN_HINT = (
+    "Generá el artefacto con `uv run python tests/eval_runner.py` "
+    "(requiere API key del LLM) y volvé a refrescar."
+)
+
+
+# Marcador por status de la corrida de un caso. "degraded" = el LLM falló y el grafo cayó al
+# fallback determinístico (la salida no refleja al modelo); "error" = el caso crasheó entero.
+_STATUS_MARK = {"ok": "", "degraded": "🟠", "error": "🔴"}
+
+
+def _category_label(category: str) -> str:
+    return EVAL_CATEGORY_LABELS.get(category, f"⚪ {category}")
+
+
+def _case_status(case: dict) -> str:
+    """Status del caso, con fallback para artefactos viejos sin el campo `status`."""
+    st = case.get("status")
+    if st:
+        return st
+    return "error" if case.get("error") else "ok"
+
+
+def _status_counts(cases: list[dict]) -> dict[str, int]:
+    """Cuenta casos por status (ok / degraded / error)."""
+    counts = {"ok": 0, "degraded": 0, "error": 0}
+    for c in cases:
+        counts[_case_status(c)] = counts.get(_case_status(c), 0) + 1
+    return counts
+
+
+def load_eval_history(path: Path | None = None) -> list[dict]:
+    """
+    Lee el historial de evaluación (logs/eval_report.json) y lo devuelve como lista de corridas.
+
+    Devuelve [] si el archivo no existe o está corrupto. Migra el formato viejo (un único
+    objeto-reporte) envolviéndolo en una lista de una corrida, para no romper artefactos previos.
+    """
+    report_path = path or EVAL_REPORT_FILE
+    if not report_path.exists():
+        return []
+    try:
+        data = json.loads(report_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return []
+    if isinstance(data, list):
+        return data
+    if isinstance(data, dict):  # formato viejo (un solo reporte) → una corrida
+        return [data]
+    return []
+
+
+def eval_history_summary_md(history: list[dict] | None) -> str:
+    """Encabezado del historial: cuántas corridas hay y cuándo fue la última."""
+    if not history:
+        return "_Todavía no hay corridas de evaluación._\n\n" + _RUN_HINT
+    ultima = history[-1]
+    return (
+        f"**Historial de evaluación** — {len(history)} corrida(s) registrada(s) · "
+        f"última: {ultima.get('generated_at', '?')} (`{ultima.get('model', '?')}`)"
+    )
+
+
+def eval_run_choices(history: list[dict] | None) -> list[tuple[str, int]]:
+    """Opciones (label, índice) para el selector de corridas, más recientes primero."""
+    if not history:
+        return []
+    choices = []
+    for i, run in enumerate(history):
+        n_casos = run.get("case_count", len(run.get("cases", [])))
+        counts = _status_counts(run.get("cases", []))
+        flags = []
+        if counts["degraded"]:
+            flags.append(f"🟠{counts['degraded']}")
+        if counts["error"]:
+            flags.append(f"🔴{counts['error']}")
+        flag = f" · {' '.join(flags)}" if flags else ""
+        label = (
+            f"#{i + 1} · {run.get('generated_at', '?')} · "
+            f"`{run.get('model', '?')}` · {n_casos} caso(s){flag}"
+        )
+        choices.append((label, i))
+    choices.reverse()  # la corrida más reciente arriba
+    return choices
+
+
+def get_eval_run(history: list[dict] | None, run_idx: int | None) -> Optional[dict]:
+    """Devuelve la corrida en ese índice (o la última si no se especifica o es inválido)."""
+    if not history:
+        return None
+    if run_idx is None:
+        return history[-1]
+    try:
+        return history[int(run_idx)]
+    except (IndexError, ValueError, TypeError):
+        return history[-1]
+
+
+def eval_summary_md(report: Optional[dict]) -> str:
+    """Cabecera con los metadatos de una corrida y el desglose por categoría."""
+    if not report:
+        return (
+            "_Todavía no hay resultados de evaluación._\n\n" + _RUN_HINT
+        )
+
+    cases = report.get("cases", [])
+    por_categoria = {cat: 0 for cat in EVAL_CATEGORY_LABELS}
+    for c in cases:
+        por_categoria[c.get("category", "")] = por_categoria.get(c.get("category", ""), 0) + 1
+    desglose = " · ".join(
+        f"{_category_label(cat)}: {n}" for cat, n in por_categoria.items() if n
+    )
+
+    counts = _status_counts(cases)
+    flags = []
+    if counts["degraded"]:
+        flags.append(f"🟠 {counts['degraded']} degradado(s) al fallback")
+    if counts["error"]:
+        flags.append(f"🔴 {counts['error']} con error")
+    estado = " · " + " · ".join(flags) if flags else " · ✅ sin incidencias"
+
+    return (
+        f"**Evaluación cualitativa** — {len(cases)} caso(s) · "
+        f"proveedor `{report.get('provider', '?')}` · modelo `{report.get('model', '?')}`  \n"
+        f"Generado: {report.get('generated_at', '?')}  \n"
+        f"{desglose}{estado}"
+    )
+
+
+def eval_case_choices(report: Optional[dict]) -> list[tuple[str, str]]:
+    """Opciones (label, id) para el selector de casos, en el orden del reporte."""
+    if not report:
+        return []
+    choices = []
+    for c in report.get("cases", []):
+        desc = _clip(c.get("description", ""), 56)
+        emoji = _category_label(c.get("category", "")).split(" ", 1)[0]
+        mark = _STATUS_MARK.get(_case_status(c), "")
+        suffix = f" {mark}" if mark else ""
+        choices.append((f"{emoji} {c.get('id', '?')} — {desc}{suffix}", c.get("id", "")))
+    return choices
+
+
+def find_eval_case(report: Optional[dict], case_id: str | None) -> Optional[dict]:
+    """Devuelve el caso con ese id (o el primero si no se especifica) del reporte."""
+    if not report:
+        return None
+    cases = report.get("cases", [])
+    if not cases:
+        return None
+    if case_id:
+        for c in cases:
+            if c.get("id") == case_id:
+                return c
+    return cases[0]
+
+
+def eval_context_md(case: Optional[dict]) -> str:
+    """Tira de contexto del caso: categoría, descripción, setup e input."""
+    if not case:
+        return "_Seleccioná un caso para ver la comparación._"
+
+    lineas = [
+        f"#### {_category_label(case.get('category', ''))} · `{case.get('id', '?')}`",
+        case.get("description", ""),
+    ]
+    if case.get("setup"):
+        pasos = "; ".join(json.dumps(s, ensure_ascii=False) for s in case["setup"])
+        lineas.append(f"- **Setup previo:** {pasos}")
+    lineas.append(f"- **Input:** `{json.dumps(case.get('input', {}), ensure_ascii=False)}`")
+
+    meta = []
+    if case.get("alerts_count") is not None:
+        meta.append(f"alertas: {case['alerts_count']}")
+    if case.get("duration_s") is not None:
+        meta.append(f"⏱ {case['duration_s']}s")
+    if case.get("model"):
+        meta.append(f"modelo `{case['model']}`")
+    if case.get("evaluated_at"):
+        meta.append(f"corrido: {case['evaluated_at']}")
+    if meta:
+        lineas.append(f"- _{' · '.join(meta)}_")
+
+    return "\n".join(lineas)
+
+
+def eval_expected_md(case: Optional[dict]) -> str:
+    """Panel izquierdo: el comportamiento esperado del caso."""
+    if not case:
+        return ""
+    return case.get("expected_behavior", "_(sin comportamiento esperado definido)_")
+
+
+def eval_obtained_md(case: Optional[dict]) -> str:
+    """Panel derecho: la salida obtenida del sistema (reporte/respuesta del Clínico)."""
+    if not case:
+        return ""
+
+    status = _case_status(case)
+    if status == "error":
+        return f"🔴 **Error durante la ejecución del caso**\n\n```\n{case.get('error', '')}\n```"
+
+    parts = []
+    if status == "degraded":
+        # El LLM falló y el grafo cayó al fallback determinístico: la salida de abajo NO refleja
+        # al modelo, así que avisamos antes de mostrarla para no puntuarla como si fuera del LLM.
+        parts.append(
+            "🟠 **Salida degradada — fallback determinístico, NO refleja al LLM.**  \n"
+            "El modelo falló durante la corrida (rate limit, 413, timeout…) y el grafo respondió "
+            "con su fallback sin LLM. Volvé a correr el caso con más cupo de tokens.\n\n"
+            f"_Motivo:_\n```\n{case.get('error', '')}\n```"
+        )
+    obtained = case.get("obtained")
+    if obtained:
+        parts.append(obtained)
+    return "\n\n".join(parts) if parts else "_(sin salida)_"
+
+
+def eval_case_view(
+    report: Optional[dict], case_id: str | None
+) -> tuple[str, str, str]:
+    """Render completo de un caso: (contexto, esperado, obtenido). Atajo para el wiring."""
+    case = find_eval_case(report, case_id)
+    return eval_context_md(case), eval_expected_md(case), eval_obtained_md(case)

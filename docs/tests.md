@@ -41,7 +41,8 @@ redacción de un LLM. Por eso:
 - **No** testea tools, funciones ni pasos intermedios — solo el output final.
 - **No** es un test de pytest (no tiene sentido un pass/fail sobre calidad subjetiva). Es un
   **script** que corre los casos de [`tests/cases/*.json`](../tests/cases/) con LLM real y vuelca
-  un artefacto Markdown (*esperado vs. obtenido*) para que un humano puntúe.
+  un artefacto JSON (`logs/eval_report.json`, *esperado vs. obtenido*) que la pestaña
+  **Evaluación** de la interfaz Gradio lee para que un humano compare y puntúe.
 - A futuro, ese juicio manual se reemplaza por un **LLM-as-judge**.
 - Inevitablemente, al necesitar el resultado final, ejercita de forma indirecta toda la
   integración y la comunicación entre agentes — pero validar la plomería en sí es trabajo de
@@ -55,5 +56,26 @@ Los casos siguen el schema: `{ id, category, description, setup?, input, expecte
 uv run pytest -m "not integration and not llm"   # gate determinístico (rápido, sin infra/LLM)
 uv run pytest tests/test_clinico_tools.py         # tools del Clínico, todos (requiere infra)
 uv run pytest -m llm                              # plomería con LLM real (requiere API key)
-uv run python tests/eval_runner.py                # evaluación cualitativa → logs/eval_report.md
+uv run python tests/eval_runner.py                # evaluación cualitativa → logs/eval_report.json (se lee en la pestaña «Evaluación»)
 ```
+
+La evaluación acepta flags para correr un subconjunto y **no agotar los tokens** del proveedor de
+una sola vez. El JSON es un **historial append-only**: cada ejecución agrega una "corrida" (un
+objeto con solo los casos evaluados esa vez) al array, conservando el historial completo:
+
+```bash
+uv run python tests/eval_runner.py --list                 # lista los casos y sale (sin API key)
+uv run python tests/eval_runner.py -c happy               # una categoría (alias: happy/edge/adv) → nueva corrida
+uv run python tests/eval_runner.py --case happy_01        # un único caso → nueva corrida
+uv run python tests/eval_runner.py -c edge --case edge_03 # intersección categoría ∩ id
+uv run python tests/eval_runner.py --overwrite            # descarta el historial y empieza de cero
+```
+
+La pestaña **Evaluación** de la UI tiene un selector de **corrida** (más reciente arriba) y, dentro
+de ella, un selector de **caso** con la comparación esperado vs. obtenido lado a lado.
+
+Cada caso lleva un `status`: `ok`, `degraded` o `error`. **`degraded`** marca que el LLM falló
+durante la corrida (rate limit, 413, timeout…) y el grafo cayó a su **fallback determinístico**:
+la salida existe pero **no refleja al modelo**, así que no hay que puntuarla como si lo hiciera.
+El runner lo detecta capturando los errores de fallback que loguea `orchestrator.graph`, y la UI lo
+señala (🟠 en el selector y un aviso en el panel de salida). `error` = el caso crasheó entero.

@@ -1,0 +1,54 @@
+[
+  {
+    "generated_at": "2026-06-29T08:59:19",
+    "provider": "groq",
+    "model": "qwen/qwen3-32b",
+    "case_count": 1,
+    "error_count": 0,
+    "cases": [
+      {
+        "id": "happy_01",
+        "category": "happy_path",
+        "description": "Paciente controlado (P001): HbA1c estable, sin alertas.",
+        "input": {
+          "patient_id": "P001",
+          "query": "Analizá al paciente",
+          "doctor_context": ""
+        },
+        "setup": null,
+        "expected_behavior": "Identifica al paciente como metabólicamente controlado (HbA1c ~5.2% estable, glucemias normales), sin alertas, y sugiere continuar el plan actual. Mantiene el tono de soporte (no diagnóstico) con el disclaimer.",
+        "obtained": "**Reporte Clínico Estructurado**  \n**Paciente:** [ID no proporcionado]  \n\n**Resumen del estado metabólico general**  \nEl paciente presenta valores estables en todas las métricas clave:  \n- Glucemia en ayuno: 88.0 mg/dL (rango objetivo: <100 mg/dL)  \n- HbA1c: 5.2% (rango objetivo: <7% para diabetes tipo 2)  \n- Glucemia postprandial: 125.0 mg/dL (rango objetivo: <180 mg/dL)  \n- Peso: 72.0 kg (sin variación)  \n- Presión arterial: 118/76 mmHg (dentro de límites normales)  \n\n**Evaluación longitudinal**  \nNo se requirió comparación longitudinal (indicado por `requires_longitudinal_comparison=False`).  \n\n**Alertas**  \nNo se detectaron desviaciones de umbrales clínicos en esta sesión.  \n\n**Tendencias relevantes**  \nTodas las métricas permanecen estables sin variación significativa.  \n\n**Recomendaciones y contexto clínico**  \n- El paciente mantiene una respuesta favorable al tratamiento actual (Metformina 850 mg cada 12h).  \n- Según la guía ADA 2024, \"objetivos individuales deben ajustarse según riesgo de hipoglucemia y comorbilidades\" [ADA_2024.md].  \n\n**Preguntas de seguimiento sugeridas**  \n1. ¿Se mantiene el paciente en el mismo régimen terapéutico?  \n2. ¿Hay síntomas de hipoglucemia o fatiga no reportados?  \n\n**Disclaimer obligatorio**  \n⚠️ Este reporte es un insumo de soporte a la decisión clínica. No reemplaza el criterio del médico tratante ni constituye un diagnóstico médico.",
+        "alerts_count": 0,
+        "duration_s": 56.14,
+        "error": null
+      }
+    ]
+  },
+  {
+    "generated_at": "2026-06-29T09:54:39",
+    "provider": "groq",
+    "model": "qwen/qwen3-32b",
+    "case_count": 1,
+    "degraded_count": 1,
+    "error_count": 0,
+    "cases": [
+      {
+        "id": "happy_02",
+        "category": "happy_path",
+        "description": "Deterioro progresivo de HbA1c (P002): tendencia ascendente sostenida.",
+        "input": {
+          "patient_id": "P002",
+          "query": "Analizá la evolución del paciente",
+          "doctor_context": ""
+        },
+        "setup": null,
+        "expected_behavior": "Detecta el deterioro progresivo: HbA1c en ascenso sostenido hasta 8.2% y glucemias en aumento, y lo señala como descontrol que requiere atención. Si el RAG está activo, respalda la interpretación con las guías clínicas.",
+        "obtained": "[Clinical fallback] Reporte determinístico del paciente P002. Se detectaron 34 alerta(s). Medicación activa: Metformina, Empagliflozina.",
+        "alerts_count": 34,
+        "duration_s": 162.3,
+        "status": "degraded",
+        "error": "Clínico: error en agente real, fallback determinístico: Error code: 413 - {'error': {'message': 'Request too large for model `qwen/qwen3-32b` in organization `org_01kqte3spde21am046ym785qy8` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Requested 6973, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}"
+      }
+    ]
+  }
+]

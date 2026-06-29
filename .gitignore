@@ -222,7 +222,12 @@ __marimo__/
 chroma_db/
 *.csv
 *.pdf
-logs/
+# Ignoramos el contenido de logs/ (trazas locales), pero NO el directorio entero (usamos
+# logs/* y no logs/) para poder versionar el historial de evaluación con la excepción de abajo.
+logs/*
+# Excepción: el historial de evaluación cualitativa (lo genera tests/eval_runner.py) SÍ se
+# versiona, para dejar registro de cómo fue puntuando el sistema a lo largo del tiempo.
+!logs/eval_report.json
 
 # Excepción: el fixture de muestra de D (data/sample/*.csv) SÍ se versiona — materializa el
 # contrato #1 (4 perfiles P001–P004) para que la UI y los tests del Monitor corran sin esperar
