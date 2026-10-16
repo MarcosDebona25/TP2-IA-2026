@@ -1,6 +1,7 @@
 # orchestrator/graph.py
 
 import logging
+import re
 
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
@@ -31,10 +32,12 @@ logger = logging.getLogger(__name__)
 
 def _fallback_reason(error: BaseException) -> str:
     """Motivo legible-por-máquina de una caída al fallback, a partir del error del proveedor."""
+    status = getattr(error, "status_code", None)
     text = str(error).lower()
-    if "429" in text or "rate limit" in text or "rate_limit" in text:
+    # Códigos como palabra completa: un request_id hexadecimal (p. ej. "...193429acd") no es un 429.
+    if status == 429 or re.search(r"\b429\b", text) or "rate limit" in text or "rate_limit" in text:
         return "rate_limit"
-    if "413" in text or "request too large" in text:
+    if status == 413 or re.search(r"\b413\b", text) or "request too large" in text:
         return "too_large"
     return "error"
 

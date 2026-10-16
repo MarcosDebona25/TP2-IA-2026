@@ -9,6 +9,7 @@
 #   openrouter    → OPENROUTER_API_KEY   (API compatible con OpenAI; cientos de modelos)
 #   openai_compat → LLM_API_KEY + LLM_BASE_URL (cualquier API compatible con OpenAI: DeepSeek, Cerebras,
 #                   Mistral, OpenCode Zen, Ollama local en http://localhost:11434/v1, etc.)
+#                   Con DeepSeek el razonamiento se desactiva por defecto (LLM_THINKING, ADR-0021).
 #
 # Cadena de respaldo entre proveedores: LLM_FALLBACK_MODELS="gemini:gemini-2.5-flash-lite,groq:openai/gpt-oss-20b"
 # (cada entrada es `proveedor:modelo`; sin prefijo de proveedor conocido, es un modelo del proveedor principal).
@@ -228,6 +229,21 @@ def _build_gemini(model: str, retries: int = 1):
     return ChatGoogleGenerativeAI(model=model, temperature=0, google_api_key=_api_key("gemini"), max_retries=retries)
 
 
+def thinking_mode(base_url: str) -> str | None:
+    """
+    Parámetro `thinking` de la API de DeepSeek (ADR-0021): "disabled", "enabled" o None (no se envía).
+
+    DeepSeek razona por defecto y en ese modo rechaza el `tool_choice` forzado de la salida estructurada
+    (HTTP 400 "Thinking mode does not support this tool_choice"): el Monitor y el reporte caían al fallback.
+    Por eso con DeepSeek se desactiva salvo que LLM_THINKING diga otra cosa. A otras APIs solo se envía si
+    LLM_THINKING está definido (un parámetro desconocido podría rechazarse).
+    """
+    value = os.getenv("LLM_THINKING", "").strip().lower()
+    if value in ("enabled", "disabled"):
+        return value
+    return "disabled" if "deepseek.com" in base_url else None
+
+
 def _build_openai_compatible(provider: str, model: str, retries: int = 1):
     """OpenRouter u otra API compatible con OpenAI (ADR-0020), con `langchain-openai`."""
     from langchain_openai import ChatOpenAI
@@ -243,6 +259,9 @@ def _build_openai_compatible(provider: str, model: str, retries: int = 1):
             extra_body["reasoning"] = {"effort": os.getenv("LLM_REASONING_EFFORT", "low")}
     else:
         base_url = os.getenv("LLM_BASE_URL", "https://api.openai.com/v1")
+        thinking = thinking_mode(base_url)
+        if thinking:
+            extra_body["thinking"] = {"type": thinking}
     if extra_body:
         kwargs["extra_body"] = extra_body
     # Tiempo máximo por llamada: sin él, un proveedor lento bloquea el análisis minutos (medido: 248 s
