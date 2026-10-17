@@ -25,6 +25,9 @@ def _analizar(app, t, pid="P002"):
     ("Error code: 413 - Request too large", "too_large"),
     ("Error code: 404 - model_not_found", "error"),
     ("conexión rechazada", "error"),
+    # Un 400 de DeepSeek cuyo request_id contiene "429" no es un límite de cuota
+    ("Error code: 400 - Thinking mode does not support this tool_choice "
+     "(request_id: 23b32cac-dfb8-4b0e-877f-dda193429acd)", "error"),
 ])
 def test_motivo_de_la_caida_al_fallback(error, motivo):
     assert _fallback_reason(RuntimeError(error)) == motivo

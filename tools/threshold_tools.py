@@ -47,7 +47,8 @@ class Band:
 
 _SAD = "Guía SAD 2025"
 _NACIONAL = "Guía Nacional de Práctica Clínica DM2 2019"
-_ADA_HIPO = "ADA Standards of Care 2024 §6 (niveles de hipoglucemia; fuera del corpus, ver F2-06)"
+# La cita se muestra en la interfaz: sin referencias internas del plan (ADA S06 está indexada, ADR-0017).
+_ADA_HIPO = "ADA Standards of Care 2024 §6 (niveles de hipoglucemia)"
 
 # Hipoglucemia (igual para ayunas y postprandial): nivel 1 < 70, nivel 2 < 54 mg/dL.
 _HYPO_BANDS = (

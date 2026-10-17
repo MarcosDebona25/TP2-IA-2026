@@ -26,6 +26,7 @@ Complementa al [plan de correcciones](../plan_correcciones.md), que dice **qué*
 | [0018](0018-modo-de-ejecucion-visible.md) | Modo de ejecución visible: el estado registra si cada nodo usó el LLM o el fallback | Aceptado | 2026-09-25 | F3-06 parcial · EAS-25 |
 | [0019](0019-reporte-estructurado-y-generacion-anclada.md) | Reporte clínico estructurado con generación anclada (citas por id, cifras validadas) | Aceptado | 2026-09-25 | F3-04 · EAS-23 |
 | [0020](0020-proveedores-openai-compatibles-y-cadena-entre-proveedores.md) | Proveedores compatibles con OpenAI (OpenRouter) y cadena de respaldo entre proveedores | Aceptado | 2026-09-25 | MVP-06 · EAS-38 |
+| [0021](0021-deepseek-sin-razonamiento.md) | DeepSeek directo con el razonamiento desactivado | Aceptado | 2026-10-16 | — |
 | [0015](0015-modo-lean-para-free-tier.md) | Modo `lean` de los agentes para el free tier, con `react` listo para una API paga | Aceptado | 2026-09-25 | MVP-06 · F3-05 · EAS-38/24 |
 | [0016](0016-cadena-de-respaldo-de-modelos.md) | Cadena de respaldo de modelos LLM | Aceptado | 2026-09-25 | MVP-06 · EAS-38 |
 

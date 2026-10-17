@@ -167,6 +167,8 @@ el LLM razona el *qué* y el *hasta cuándo*; el cálculo es 100% determinístic
 
 15. **Proveedores de LLM** (ADR-0020): `groq`, `gemini`, `openrouter` y `openai_compat` (cualquier API compatible con OpenAI), con
     cadena de respaldo entre proveedores (`LLM_FALLBACK_MODELS=proveedor:modelo`) y tiempo máximo por llamada.
+    Con DeepSeek directo (`openai_compat`, `deepseek-flash`) el razonamiento se desactiva por defecto: en ese modo
+    rechaza el `tool_choice` forzado de la salida estructurada (`LLM_THINKING`, ADR-0021).
 
 ## Convenciones
 
