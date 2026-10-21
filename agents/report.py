@@ -18,7 +18,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from agents.context import AlertGroup, alert_groups
+from agents.context import AlertGroup, alert_groups, metric_label
 from orchestrator.state import MonitorAnalysis
 
 DISCLAIMER = (
@@ -286,7 +286,8 @@ def render_report(
         if deltas:
             out += ["", f"Cambios respecto de la sesión anterior ({prev.get('date', 's/f')}):", "",
                     "| Métrica | Δ (actual − anterior) |", "|---|---|"]
-            out += [f"| {m} | {d:+g} |" for m, d in deltas.items()]
+            # Nombre clínico legible en vez de la clave interna (glucose_fasting → Glucosa en ayunas).
+            out += [f"| {metric_label(m)} | {d:+g} |" for m, d in deltas.items()]
     else:
         # Sin sesión previa real no se muestra ninguna "evolución" que el LLM pudiera haber escrito igual.
         out.append("No hay sesiones previas guardadas para comparar.")

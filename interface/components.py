@@ -24,6 +24,7 @@ from orchestrator.state import (
     MonitorAnalysis,
     PatientMetrics,
 )
+from agents.context import alert_groups
 from tools.patient_tools import SAMPLE_DATA_DIR
 from interface.logging_config import LOG_DIR, LOG_FILE
 
@@ -44,16 +45,42 @@ METRIC_LABELS: dict[str, str] = {
     "blood_pressure_diastolic": "PA diastólica (mmHg)",
 }
 
-# Flecha por dirección de tendencia (output de MetricStats.direction).
-_DIRECTION_ARROW = {"subiendo": "↑", "bajando": "↓", "estable": "→"}
+# Nombre y unidad por separado, para las tablas HTML (la unidad va en gris junto al nombre).
+_METRIC_NAME_UNIT: dict[str, tuple[str, str]] = {
+    "glucose_fasting": ("Glucosa en ayunas", "mg/dL"),
+    "hba1c": ("HbA1c", "%"),
+    "glucose_postprandial": ("Glucosa postprandial", "mg/dL"),
+    "weight": ("Peso", "kg"),
+    "blood_pressure_systolic": ("PA sistólica", "mmHg"),
+    "blood_pressure_diastolic": ("PA diastólica", "mmHg"),
+}
 
-# Emoji por severidad (output de Alert.severity).
-_SEVERITY_EMOJI = {"severa": "🔴", "moderada": "🟠", "leve": "🟡"}
+# Flecha + clase CSS por dirección de tendencia (output de MetricStats.direction).
+_DIRECTION_ARROW = {"subiendo": "↑", "bajando": "↓", "estable": "→"}
+_DIRECTION_CLASS = {"subiendo": "up", "bajando": "down", "estable": "flat"}
+
+# Orden de severidad (output de Alert.severity): severa primero.
+_SEVERITY_ORDER = {"severa": 0, "moderada": 1, "leve": 2}
+
+_esc = html.escape
 
 
 def _fmt(x: float) -> str:
     """Formatea un número con hasta 1 decimal, sin ceros sobrantes (5.40 → '5.4')."""
     return f"{x:.1f}".rstrip("0").rstrip(".") if isinstance(x, float) else str(x)
+
+
+def _fmt_signed(x: float) -> str:
+    """Delta con signo explícito (+0.4 / −1.2 / 0), con el signo menos tipográfico."""
+    if not x:
+        return "0"
+    return ("+" if x > 0 else "−") + _fmt(abs(x))
+
+
+def _metric_cell(metric: str) -> str:
+    name, unit = _METRIC_NAME_UNIT.get(metric, (metric, ""))
+    unit_html = f"<span class='unit'>{_esc(unit)}</span>" if unit else ""
+    return f"<td class='metric'>{_esc(name)}{unit_html}</td>"
 
 
 # -------------------------------------------------------------------
@@ -77,75 +104,213 @@ def list_patients(data_dir: Path | None = None) -> list[str]:
 # -------------------------------------------------------------------
 
 def severity_badge(severity: str) -> str:
-    """Devuelve un badge legible (emoji + texto) para una severidad de alerta."""
-    emoji = _SEVERITY_EMOJI.get(severity.lower(), "⚪")
-    return f"{emoji} {severity.capitalize()}"
+    """Pill de severidad: color + texto (nunca solo color, por accesibilidad y proyector)."""
+    sev = (severity or "").lower()
+    cls = f"sev-{sev}" if sev in _SEVERITY_ORDER else "is-neutral"
+    return f"<span class='tp2-pill {cls}'>{_esc(severity.capitalize())}</span>"
 
 
 # -------------------------------------------------------------------
 # Tabla de alertas
 # -------------------------------------------------------------------
 
-def alerts_table(alerts: list[Alert]) -> str:
-    """Tabla Markdown de alertas, ordenadas por severidad (severa → moderada → leve)."""
+def _threshold_short(threshold: str) -> str:
+    """Solo el comparador del umbral ("fuera de la meta…, moderada: >= 7 %" → "≥ 7 %")."""
+    short = threshold.rsplit(": ", 1)[-1]
+    return short.replace(">=", "≥").replace("<=", "≤")
+
+
+def alerts_table(alerts: Optional[list[Alert]]) -> str:
+    """
+    Tabla HTML de alertas agrupadas, con el detalle de cada registro plegado debajo.
+    `None` = todavía no hay análisis; `[]` = hubo análisis y no hay alertas (no confundirlos:
+    "sin alertas" antes de analizar sería un falso negativo en pantalla).
+    """
+    if alerts is None:
+        return "<p class='tp2-muted'>Las alertas aparecen después de analizar al paciente.</p>"
     if not alerts:
-        return "✅ **Sin alertas**: no se detectaron violaciones de umbrales clínicos."
-
-    orden = {"severa": 0, "moderada": 1, "leve": 2}
-    alerts_ordenadas = sorted(alerts, key=lambda a: orden.get(a.severity.lower(), 9))
-
-    filas = [
-        "| Severidad | Métrica | Valor | Fecha | Detalle |",
-        "|---|---|---|---|---|",
-    ]
-    for a in alerts_ordenadas:
-        metrica = METRIC_LABELS.get(a.metric, a.metric)
-        filas.append(
-            f"| {severity_badge(a.severity)} | {metrica} | {_fmt(a.value)} | {a.date.isoformat()} | {a.description} |"
+        return (
+            "<div class='tp2-callout is-ok'><span class='tp2-pill is-ok'>Sin alertas</span>"
+            "<span>No se detectaron valores fuera de las metas de control.</span></div>"
         )
-    return "\n".join(filas)
+
+    # Vista principal: un renglón por grupo (métrica + lado), con los MISMOS ids A1, A2… que usa
+    # el reporte clínico, para que el médico cruce tabla y reporte sin buscar.
+    grupos = []
+    for g in alert_groups(alerts):
+        pills = " ".join(severity_badge(s) for s in g.severities)
+        nombre = _esc(g.title)
+        unit = f"<span class='unit'>{_esc(g.unit)}</span>" if g.unit else ""
+        grupos.append(
+            "<tr>"
+            f"<td class='id'>{g.id}</td>"
+            f"<td class='metric'>{nombre}{unit}</td>"
+            f"<td>{pills}</td>"
+            f"<td class='num'>{g.count}</td>"
+            f"<td class='num'><b>{_fmt(g.worst_value)}</b></td>"
+            f"<td class='num'>{_esc(_threshold_short(g.threshold))}</td>"
+            f"<td class='num period'>{_esc(g.period.replace(' a ', ' → '))}</td>"
+            "</tr>"
+        )
+
+    # Detalle: cada registro fuera de meta, plegado para no ocupar la pantalla.
+    alerts_ordenadas = sorted(alerts, key=lambda a: (_SEVERITY_ORDER.get(a.severity.lower(), 9), a.date))
+    filas = []
+    for a in alerts_ordenadas:
+        filas.append(
+            "<tr>"
+            f"<td>{severity_badge(a.severity)}</td>"
+            f"{_metric_cell(a.metric)}"
+            f"<td class='num'>{_fmt(a.value)}</td>"
+            f"<td class='num'>{a.date.isoformat()}</td>"
+            f"<td class='desc'>{_esc(a.description)}</td>"
+            "</tr>"
+        )
+    return (
+        "<div class='tp2-table-wrap'><table class='tp2-table'>"
+        "<thead><tr><th>Id</th><th>Métrica</th><th>Severidad</th><th class='num'>Registros</th>"
+        "<th class='num'>Peor valor</th><th class='num'>Umbral</th><th class='num'>Período</th></tr></thead>"
+        f"<tbody>{''.join(grupos)}</tbody></table></div>"
+        f"<details class='tp2-disclosure'><summary>Ver los {len(alerts)} registros fuera de meta</summary>"
+        "<div class='tp2-table-wrap'><table class='tp2-table'>"
+        "<thead><tr><th>Severidad</th><th>Métrica</th><th class='num'>Valor</th>"
+        "<th class='num'>Fecha</th><th>Detalle</th></tr></thead>"
+        f"<tbody>{''.join(filas)}</tbody></table></div></details>"
+    )
+
+
+def alerts_meta(alerts: list[Alert]) -> str:
+    """Resumen corto de alertas por severidad ("3 severas · 5 moderadas")."""
+    if not alerts:
+        return ""
+    counts: dict[str, int] = {}
+    for a in alerts:
+        counts[a.severity.lower()] = counts.get(a.severity.lower(), 0) + 1
+    plural = {"severa": "severas", "moderada": "moderadas", "leve": "leves"}
+    partes = [
+        f"{n} {sev if n == 1 else plural.get(sev, sev)}"
+        for sev, n in sorted(counts.items(), key=lambda kv: _SEVERITY_ORDER.get(kv[0], 9))
+    ]
+    return " · ".join(partes)
 
 
 # -------------------------------------------------------------------
 # Visualización de tendencias
 # -------------------------------------------------------------------
 
-def _trend_row(label: str, stats: Optional[MetricStats]) -> str:
+def _trend_row(metric: str, stats: Optional[MetricStats]) -> str:
     if stats is None:  # métrica sin registros: no se inventan valores (ADR-0003)
-        return f"| {label} | — | — | — | — | — | sin datos |"
+        return f"<tr>{_metric_cell(metric)}" + "<td class='num na'>—</td>" * 5 + "<td class='na'>sin datos</td></tr>"
     arrow = _DIRECTION_ARROW.get(stats.direction, "")
+    cls = _DIRECTION_CLASS.get(stats.direction, "flat")
     return (
-        f"| {label} | {_fmt(stats.last_value)} | {_fmt(stats.mean)} | "
-        f"{_fmt(stats.min_value)} | {_fmt(stats.max_value)} | {_fmt(stats.delta):>4} | "
-        f"{arrow} {stats.direction} |"
+        f"<tr>{_metric_cell(metric)}"
+        f"<td class='num'><b>{_fmt(stats.last_value)}</b></td>"
+        f"<td class='num'>{_fmt(stats.mean)}</td>"
+        f"<td class='num'>{_fmt(stats.min_value)}</td>"
+        f"<td class='num'>{_fmt(stats.max_value)}</td>"
+        f"<td class='num'>{_fmt_signed(stats.delta)}</td>"
+        f"<td><span class='tp2-dir {cls}'>{arrow} {_esc(stats.direction)}</span></td></tr>"
     )
 
 
 def trends_view(analysis: Optional[MonitorAnalysis]) -> str:
     """
-    Tabla Markdown con las estadísticas por métrica (último, media, mín, máx, Δ, tendencia).
+    Tabla HTML con las estadísticas por métrica (último, media, mín, máx, Δ, tendencia).
     Devuelve un aviso si todavía no hay análisis del Monitor, y lista las métricas con datos
     insuficientes para evaluar su evolución.
     """
     if analysis is None:
-        return "_Sin análisis del Monitor todavía. Ejecutá un análisis para ver las tendencias._"
+        return "<p class='tp2-muted'>Las tendencias aparecen después de analizar al paciente.</p>"
 
     filas = [
-        "| Métrica | Último | Media | Mín | Máx | Δ | Tendencia |",
-        "|---|---|---|---|---|---|---|",
-        _trend_row(METRIC_LABELS["glucose_fasting"], analysis.glucose_fasting_stats),
-        _trend_row(METRIC_LABELS["hba1c"], analysis.hba1c_stats),
-        _trend_row(METRIC_LABELS["glucose_postprandial"], analysis.glucose_postprandial_stats),
-        _trend_row(METRIC_LABELS["weight"], analysis.weight_stats),
-        _trend_row(METRIC_LABELS["blood_pressure_systolic"], analysis.blood_pressure_stats.systolic),
-        _trend_row(METRIC_LABELS["blood_pressure_diastolic"], analysis.blood_pressure_stats.diastolic),
+        _trend_row("glucose_fasting", analysis.glucose_fasting_stats),
+        _trend_row("hba1c", analysis.hba1c_stats),
+        _trend_row("glucose_postprandial", analysis.glucose_postprandial_stats),
+        _trend_row("weight", analysis.weight_stats),
+        _trend_row("blood_pressure_systolic", analysis.blood_pressure_stats.systolic),
+        _trend_row("blood_pressure_diastolic", analysis.blood_pressure_stats.diastolic),
+    ]
+    out = [
+        "<div class='tp2-table-wrap'><table class='tp2-table'>"
+        "<thead><tr><th>Métrica</th><th class='num'>Último</th><th class='num'>Media</th>"
+        "<th class='num'>Mín</th><th class='num'>Máx</th><th class='num'>Δ</th><th>Tendencia</th></tr></thead>"
+        f"<tbody>{''.join(filas)}</tbody></table></div>"
     ]
     if analysis.insufficient_data:
-        filas.append("")
-        filas.append("⚠️ **Datos insuficientes para evaluar la evolución:**")
-        for metric, motivo in analysis.insufficient_data.items():
-            filas.append(f"- {METRIC_LABELS.get(metric, metric)}: {motivo}")
-    return "\n".join(filas)
+        items = "".join(
+            f"<li>{_esc(METRIC_LABELS.get(metric, metric))}: {_esc(str(motivo))}</li>"
+            for metric, motivo in analysis.insufficient_data.items()
+        )
+        out.append(
+            "<div class='tp2-callout'><div><b>Datos insuficientes para evaluar la evolución</b>"
+            f"<ul>{items}</ul></div></div>"
+        )
+    return "".join(out)
+
+
+# -------------------------------------------------------------------
+# Indicadores clave (franja de resumen sobre el reporte)
+# -------------------------------------------------------------------
+
+def _kpi(label: str, value: str, unit: str = "", foot: str = "", cls: str = "") -> str:
+    unit_html = f"<small>{_esc(unit)}</small>" if unit else ""
+    return (
+        f"<div class='tp2-kpi {cls}'><p class='tp2-kpi-label'>{_esc(label)}</p>"
+        f"<p class='tp2-kpi-value'>{value}{unit_html}</p>"
+        f"<p class='tp2-kpi-foot'>{foot}</p></div>"
+    )
+
+
+def _kpi_metric(label: str, unit: str, stats: Optional[MetricStats]) -> str:
+    if stats is None:
+        return _kpi(label, "—", foot="sin registros")
+    arrow = _DIRECTION_ARROW.get(stats.direction, "")
+    cls = _DIRECTION_CLASS.get(stats.direction, "flat")
+    foot = (f"<span class='tp2-dir {cls}'>{arrow} {_esc(stats.direction)}</span>"
+            f"<span>Δ {_fmt_signed(stats.delta)} · media {_fmt(stats.mean)}</span>")
+    return _kpi(label, _fmt(stats.last_value), unit, foot)
+
+
+def summary_strip(analysis: Optional[MonitorAnalysis]) -> str:
+    """
+    Franja de indicadores del análisis: alertas por severidad y último valor de HbA1c, glucosa en
+    ayunas y presión arterial, con su tendencia. Solo muestra valores del análisis (ADR-0003):
+    una métrica sin registros se ve como "—". Antes del análisis muestra las mismas tarjetas
+    vacías, para que el layout no salte al llegar los resultados.
+    """
+    if analysis is None:
+        vacias = "".join(_kpi(label, "—", foot="sin análisis")
+                         for label in ("Alertas", "HbA1c", "Glucosa en ayunas", "Presión arterial"))
+        return f"<div class='tp2-kpis is-empty'>{vacias}</div>"
+
+    severas = sum(1 for a in analysis.alerts if a.severity.lower() == "severa")
+    total = len(analysis.alerts)
+    if total:
+        alerts_kpi = _kpi("Alertas", str(total), foot=f"<span>{_esc(alerts_meta(analysis.alerts))}</span>",
+                          cls="is-high" if severas else "")
+    else:
+        alerts_kpi = _kpi("Alertas", "0", foot="dentro de metas", cls="is-ok")
+
+    bp = analysis.blood_pressure_stats
+    if bp.systolic and bp.diastolic:
+        arrow = _DIRECTION_ARROW.get(bp.systolic.direction, "")
+        cls = _DIRECTION_CLASS.get(bp.systolic.direction, "flat")
+        bp_kpi = _kpi(
+            "Presión arterial", f"{_fmt(bp.systolic.last_value)}/{_fmt(bp.diastolic.last_value)}", "mmHg",
+            f"<span class='tp2-dir {cls}'>{arrow} sistólica {_esc(bp.systolic.direction)}</span>",
+        )
+    else:
+        bp_kpi = _kpi("Presión arterial", "—", foot="sin registros")
+
+    return (
+        "<div class='tp2-kpis'>"
+        + alerts_kpi
+        + _kpi_metric("HbA1c", "%", analysis.hba1c_stats)
+        + _kpi_metric("Glucosa en ayunas", "mg/dL", analysis.glucose_fasting_stats)
+        + bp_kpi
+        + "</div>"
+    )
 
 
 # -------------------------------------------------------------------
@@ -171,8 +336,11 @@ def execution_warning(execution_mode: Optional[dict]) -> str:
     motivos = {m.split(":", 1)[1] if ":" in m else "error" for m in caidos.values()}
     detalle = "; ".join(_FALLBACK_MOTIVOS.get(m, _FALLBACK_MOTIVOS["error"]) for m in sorted(motivos))
     nodos = " y ".join(sorted(caidos))
-    return (f"⚠️ **El LLM no respondió ({nodos}): {detalle}.** Lo que ves es el resultado determinístico y "
-            "básico, sin interpretación clínica. Probá de nuevo en unos minutos.")
+    return (f"**Modo determinístico: el LLM no respondió ({nodos})**, {detalle}. Lo que ves es el "
+            "resultado básico de las tools, sin interpretación clínica. Probá de nuevo en unos minutos.")
+
+
+_SEX_LABELS = {"M": "Masculino", "F": "Femenino"}
 
 
 def patient_profile(
@@ -182,53 +350,64 @@ def patient_profile(
     history: Optional[dict] = None,
 ) -> str:
     """
-    Resumen del paciente para mostrar ANTES de lanzar el análisis (paso 2 del flujo).
+    Ficha HTML del paciente para mostrar ANTES de lanzar el análisis (paso 2 del flujo).
     Combina el perfil del historial (demografía, diagnósticos, comorbilidades, sesiones previas),
     lo disponible del EHR (rango de fechas, último peso/PA) y la medicación activa.
     Degrada con elegancia si faltan datos.
     """
     if not patient_id:
-        return "_Seleccioná un paciente para ver su perfil._"
+        return "<p class='tp2-muted'>Elegí un paciente para ver su ficha.</p>"
 
-    lineas = [f"### Paciente {patient_id}"]
+    sub = "Sin perfil en el historial"
+    filas: list[tuple[str, str]] = []
 
     if history and history.get("found"):
         demo = history.get("demographics") or {}
         if demo:
-            lineas.append(f"- **Edad / sexo**: {demo.get('age', '?')} años · {demo.get('sex', '?')}")
+            sexo = _SEX_LABELS.get(str(demo.get("sex", "")), demo.get("sex", "?"))
+            sub = f"{demo.get('age', '?')} años · {sexo}"
         diagnoses = history.get("diagnoses") or []
         if diagnoses:
-            lineas.append("- **Diagnósticos**: " + ", ".join(
-                f"{d.get('label')} ({d.get('code')}, desde {d.get('since')})" for d in diagnoses
-            ))
+            filas.append(("Diagnóstico", "<br>".join(
+                f"{_esc(str(d.get('label')))} <small>{_esc(str(d.get('code')))} · desde {_esc(str(d.get('since')))}</small>"
+                for d in diagnoses
+            )))
         comorbidities = history.get("comorbidities") or []
-        lineas.append("- **Comorbilidades**: " + (", ".join(comorbidities) if comorbidities else "ninguna registrada"))
+        filas.append(("Comorbilidades", (
+            "<div class='tp2-chips'>" + "".join(f"<span class='tp2-chip'>{_esc(c)}</span>" for c in comorbidities)
+            + "</div>") if comorbidities else "<small>ninguna registrada</small>"))
         sessions = history.get("sessions") or []
         if sessions:
-            lineas.append(f"- **Sesiones previas**: {len(sessions)} (última: {sessions[-1].get('date', '?')})")
+            filas.append(("Sesiones previas",
+                          f"{len(sessions)} <small>· última {_esc(str(sessions[-1].get('date', '?')))}</small>"))
 
     if metrics and metrics.dates:
-        n = len(metrics.dates)
-        lineas.append(
-            f"- **Registros EHR**: {n} ({metrics.dates[0].isoformat()} → {metrics.dates[-1].isoformat()})"
-        )
+        filas.append(("Registros EHR", f"{len(metrics.dates)} <small>· {metrics.dates[0].isoformat()} → "
+                                       f"{metrics.dates[-1].isoformat()}</small>"))
         if metrics.weight:
-            lineas.append(f"- **Último peso**: {_fmt(metrics.weight[-1])} kg")
+            filas.append(("Último peso", f"{_fmt(metrics.weight[-1])} <small>kg</small>"))
         if metrics.blood_pressure_systolic and metrics.blood_pressure_diastolic:
-            lineas.append(
-                f"- **Última PA**: {_fmt(metrics.blood_pressure_systolic[-1])}/"
-                f"{_fmt(metrics.blood_pressure_diastolic[-1])} mmHg"
-            )
+            filas.append(("Última PA", f"{_fmt(metrics.blood_pressure_systolic[-1])}/"
+                                       f"{_fmt(metrics.blood_pressure_diastolic[-1])} <small>mmHg</small>"))
     else:
-        lineas.append("- _Sin datos de EHR cargados para este paciente._")
+        filas.append(("Registros EHR", "<small>sin datos cargados para este paciente</small>"))
 
     if medication:
-        meds = ", ".join(f"{m.name} {m.dose} ({m.frequency})" for m in medication)
-        lineas.append(f"- **Medicación activa**: {meds}")
+        filas.append(("Medicación", "<br>".join(
+            f"{_esc(m.name)} {_esc(m.dose)} <small>· {_esc(m.frequency)}</small>" for m in medication
+        )))
     else:
-        lineas.append("- **Medicación activa**: sin registros")
+        filas.append(("Medicación", "<small>sin registros</small>"))
 
-    return "\n".join(lineas)
+    iniciales = _esc(patient_id[-3:] if len(patient_id) > 3 else patient_id)
+    kv = "".join(f"<dt>{k}</dt><dd>{v}</dd>" for k, v in filas)
+    return (
+        "<div class='tp2-patient'>"
+        f"<div class='tp2-patient-head'><div class='tp2-avatar'>{iniciales}</div><div>"
+        f"<p class='tp2-patient-id'>Paciente {_esc(patient_id)}</p>"
+        f"<p class='tp2-patient-sub'>{_esc(sub)}</p></div></div>"
+        f"<dl class='tp2-kv'>{kv}</dl></div>"
+    )
 
 
 # -------------------------------------------------------------------
@@ -239,9 +418,16 @@ def format_report(report: Optional[str]) -> str:
     """Formatea el reporte del Agente Clínico para el panel principal."""
     if not report:
         return (
-            "_El reporte clínico aparecerá acá tras ejecutar el análisis._\n\n"
-            "1. Seleccioná un paciente · 2. (Opcional) Agregá contexto clínico · "
-            "3. Presioná **Analizar paciente**."
+            "<div class='tp2-empty-state'>"
+            "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' "
+            "stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'>"
+            "<path d='M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z'/>"
+            "<path d='M14 3v5h5M9 13h6M9 17h4'/></svg>"
+            "<h4>Todavía no hay un reporte</h4>"
+            "<p>El reporte clínico aparece acá cuando termina el análisis.</p>"
+            "<ul class='tp2-steps'><li><b>1</b>Elegí un paciente</li>"
+            "<li><b>2</b>Sumá contexto (opcional)</li><li><b>3</b>Analizar paciente</li></ul>"
+            "</div>"
         )
     return report
 
@@ -327,8 +513,16 @@ def _summarize_entry(entry: dict) -> str:
     if event == "tool_end":
         return f"output={entry.get('output', '')}"
     if event in ("llm_error", "tool_error"):
-        return f"⚠️ {entry.get('error', '')}"
+        return f"Error: {entry.get('error', '')}"
     return name
+
+
+def _event_class(event: str) -> str:
+    """Clase CSS del tag de evento en el visor (errores, llamadas al LLM, tools)."""
+    if event.endswith("_error"):
+        return "ev-error"
+    group = _event_group(event)
+    return f"ev-{group}" if group in ("llm", "tool") else ""
 
 
 # Largo máximo del texto que se muestra en el resumen colapsado de cada fila. El detalle
@@ -370,6 +564,7 @@ def log_view_html(entries: list[dict]) -> str:
     ]
     for e in entries:
         ts = html.escape((e.get("ts") or "")[11:23])  # solo HH:MM:SS.mmm
+        ev_cls = _event_class(e.get("event", ""))
         event = html.escape(e.get("event", ""))
         name = html.escape(_clip(e.get("name", "")))
         summary = html.escape(_clip(_summarize_entry(e)))
@@ -377,7 +572,7 @@ def log_view_html(entries: list[dict]) -> str:
         out.append(
             "<details class='tp2-row'><summary><div class='tp2-cells'>"
             f"<span class='tp2-ts'>{ts}</span>"
-            f"<span class='tp2-ev'>{event}</span>"
+            f"<span class='tp2-ev {ev_cls}'>{event}</span>"
             f"<span class='tp2-nm' title=\"{name}\">{name}</span>"
             f"<span class='tp2-sm' title=\"{summary}\">{summary}</span>"
             "</div></summary>"
@@ -396,11 +591,11 @@ def log_view_html(entries: list[dict]) -> str:
 # La UI ofrece un selector de corrida + un selector de caso, y compara "esperado vs. obtenido".
 # Como el resto del módulo, son funciones puras (string in → string out), testeables sin Gradio.
 
-# Etiqueta legible + emoji por categoría de caso (las 3 del enunciado).
+# Etiqueta legible por categoría de caso (las 3 del enunciado).
 EVAL_CATEGORY_LABELS: dict[str, str] = {
-    "happy_path": "🟢 Happy path",
-    "edge_cases": "🟠 Edge case",
-    "adversarial": "🔴 Adversarial",
+    "happy_path": "Happy path",
+    "edge_cases": "Edge case",
+    "adversarial": "Adversarial",
 }
 
 _RUN_HINT = (
@@ -411,11 +606,11 @@ _RUN_HINT = (
 
 # Marcador por status de la corrida de un caso. "degraded" = el LLM falló y el grafo cayó al
 # fallback determinístico (la salida no refleja al modelo); "error" = el caso crasheó entero.
-_STATUS_MARK = {"ok": "", "degraded": "🟠", "error": "🔴"}
+_STATUS_MARK = {"ok": "", "degraded": "degradado", "error": "error"}
 
 
 def _category_label(category: str) -> str:
-    return EVAL_CATEGORY_LABELS.get(category, f"⚪ {category}")
+    return EVAL_CATEGORY_LABELS.get(category, category)
 
 
 def _case_status(case: dict) -> str:
@@ -476,13 +671,13 @@ def eval_run_choices(history: list[dict] | None) -> list[tuple[str, int]]:
         counts = _status_counts(run.get("cases", []))
         flags = []
         if counts["degraded"]:
-            flags.append(f"🟠{counts['degraded']}")
+            flags.append(f"{counts['degraded']} degradado(s)")
         if counts["error"]:
-            flags.append(f"🔴{counts['error']}")
-        flag = f" · {' '.join(flags)}" if flags else ""
+            flags.append(f"{counts['error']} con error")
+        flag = f" · {' · '.join(flags)}" if flags else ""
         label = (
             f"#{i + 1} · {run.get('generated_at', '?')} · "
-            f"`{run.get('model', '?')}` · {n_casos} caso(s){flag}"
+            f"{run.get('model', '?')} · {n_casos} caso(s){flag}"
         )
         choices.append((label, i))
     choices.reverse()  # la corrida más reciente arriba
@@ -519,10 +714,10 @@ def eval_summary_md(report: Optional[dict]) -> str:
     counts = _status_counts(cases)
     flags = []
     if counts["degraded"]:
-        flags.append(f"🟠 {counts['degraded']} degradado(s) al fallback")
+        flags.append(f"{counts['degraded']} degradado(s) al fallback")
     if counts["error"]:
-        flags.append(f"🔴 {counts['error']} con error")
-    estado = " · " + " · ".join(flags) if flags else " · ✅ sin incidencias"
+        flags.append(f"{counts['error']} con error")
+    estado = " · " + " · ".join(flags) if flags else " · sin incidencias"
 
     return (
         f"**Evaluación cualitativa** — {len(cases)} caso(s) · "
@@ -539,10 +734,10 @@ def eval_case_choices(report: Optional[dict]) -> list[tuple[str, str]]:
     choices = []
     for c in report.get("cases", []):
         desc = _clip(c.get("description", ""), 56)
-        emoji = _category_label(c.get("category", "")).split(" ", 1)[0]
+        categoria = _category_label(c.get("category", ""))
         mark = _STATUS_MARK.get(_case_status(c), "")
-        suffix = f" {mark}" if mark else ""
-        choices.append((f"{emoji} {c.get('id', '?')} — {desc}{suffix}", c.get("id", "")))
+        suffix = f" · {mark}" if mark else ""
+        choices.append((f"{c.get('id', '?')} — {desc} [{categoria}]{suffix}", c.get("id", "")))
     return choices
 
 
@@ -578,7 +773,7 @@ def eval_context_md(case: Optional[dict]) -> str:
     if case.get("alerts_count") is not None:
         meta.append(f"alertas: {case['alerts_count']}")
     if case.get("duration_s") is not None:
-        meta.append(f"⏱ {case['duration_s']}s")
+        meta.append(f"{case['duration_s']} s")
     if case.get("model"):
         meta.append(f"modelo `{case['model']}`")
     if case.get("evaluated_at"):
@@ -603,14 +798,14 @@ def eval_obtained_md(case: Optional[dict]) -> str:
 
     status = _case_status(case)
     if status == "error":
-        return f"🔴 **Error durante la ejecución del caso**\n\n```\n{case.get('error', '')}\n```"
+        return f"**Error durante la ejecución del caso**\n\n```\n{case.get('error', '')}\n```"
 
     parts = []
     if status == "degraded":
         # El LLM falló y el grafo cayó al fallback determinístico: la salida de abajo NO refleja
         # al modelo, así que avisamos antes de mostrarla para no puntuarla como si fuera del LLM.
         parts.append(
-            "🟠 **Salida degradada — fallback determinístico, NO refleja al LLM.**  \n"
+            "> **Salida degradada: fallback determinístico, no refleja al LLM.**  \n"
             "El modelo falló durante la corrida (rate limit, 413, timeout…) y el grafo respondió "
             "con su fallback sin LLM. Volvé a correr el caso con más cupo de tokens.\n\n"
             f"_Motivo:_\n```\n{case.get('error', '')}\n```"
