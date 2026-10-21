@@ -27,6 +27,12 @@ _METRIC_LABELS = {
 }
 
 
+def metric_label(metric: str) -> str:
+    """Nombre clínico con unidad ("HbA1c (%)"); la clave cruda si la métrica no se conoce."""
+    label, unit = _METRIC_LABELS.get(metric, (metric, ""))
+    return f"{label} ({unit})" if unit else label
+
+
 def _fmt(value: float) -> str:
     return f"{value:g}"
 

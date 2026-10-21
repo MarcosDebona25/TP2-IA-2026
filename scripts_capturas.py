@@ -15,7 +15,7 @@ def shot(page, name, full=True):
 
 
 def pick_patient(page, pid):
-    dd = page.get_by_label("Paciente", exact=True)
+    dd = page.locator(".tp2-sidebar input").first
     dd.click()
     page.wait_for_timeout(300)
     page.get_by_role("option", name=pid, exact=False).first.click()

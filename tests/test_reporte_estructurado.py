@@ -106,7 +106,7 @@ def test_render_arma_citas_por_id_y_agrega_disclaimer():
 
     assert "**A1 · HbA1c**" in md and "17" not in md.split("A1 ·")[0]
     assert "«Meta de HbA1c < 7 % (individualizable)" in md and "[Guia_SAD_2025.md]" in md
-    assert "| hba1c | +0.7 |" in md
+    assert "| HbA1c (%) | +0.7 |" in md
     assert "(el modelo no interpretó este grupo)" in md, "los grupos sin interpretación se marcan, no se omiten"
     assert md.rstrip().endswith(DISCLAIMER)
 

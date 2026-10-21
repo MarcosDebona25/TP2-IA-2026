@@ -28,6 +28,7 @@ Complementa al [plan de correcciones](../plan_correcciones.md), que dice **qué*
 | [0020](0020-proveedores-openai-compatibles-y-cadena-entre-proveedores.md) | Proveedores compatibles con OpenAI (OpenRouter) y cadena de respaldo entre proveedores | Aceptado | 2026-09-25 | MVP-06 · EAS-38 |
 | [0015](0015-modo-lean-para-free-tier.md) | Modo `lean` de los agentes para el free tier, con `react` listo para una API paga | Aceptado | 2026-09-25 | MVP-06 · F3-05 · EAS-38/24 |
 | [0016](0016-cadena-de-respaldo-de-modelos.md) | Cadena de respaldo de modelos LLM | Aceptado | 2026-09-25 | MVP-06 · EAS-38 |
+| [0021](0021-sistema-visual-de-la-interfaz.md) | Sistema visual propio de la UI: tokens claro/oscuro, tipografía embebida y layout de dashboard clínico | Aceptado | 2026-10-21 | Presentación en congreso |
 
 ## Plantilla
 
