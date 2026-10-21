@@ -2,25 +2,29 @@
 #
 # Interfaz Gradio del sistema multi-agente (tarea del Integrante D).
 #
-# Dos pestañas:
-#   1. "Consulta clínica" — flujo del médico: seleccionar paciente → ver perfil → agregar
-#      contexto → analizar → leer el reporte (panel principal) + chat de seguimiento → guardar.
-#   2. "Observabilidad (dev)" — visor del log estructurado (logs/agent.jsonl) para desarrollo,
+# Tres pestañas:
+#   1. "Consulta" — flujo del médico: ficha del paciente + contexto + acción (barra lateral) y un
+#      área principal con indicadores, el reporte junto al chat de seguimiento, y debajo alertas
+#      agrupadas y tendencias a todo el ancho.
+#   2. "Observabilidad" — visor del log estructurado (logs/agent.jsonl) para desarrollo,
 #      con filtro por tipo de evento, refresco y JSON crudo de cada traza.
+#   3. "Evaluación" — comparación esperado vs. obtenido de los casos de tests/eval_runner.py.
 #
 # Conecta al grafo REAL (orchestrator.graph.app): con GROQ_API_KEY usa los agentes ReAct;
 # sin ella, el grafo cae a sus fallbacks determinísticos. Los componentes de presentación
-# viven en interface/components.py (funciones puras, testeables).
+# viven en interface/components.py (funciones puras, testeables) y el sistema visual (tema,
+# CSS, tipografía, modo claro/oscuro) en interface/theme.py (ADR-0021).
 
 from dotenv import load_dotenv
 load_dotenv()
 
 import gradio as gr
 
-from agents.llm_factory import has_api_key, llm_status
+from agents.llm_factory import active_model, has_api_key, llm_status
 from orchestrator.graph import app as langgraph_app
 from interface.logging_config import setup_logging, get_callbacks, tracing_status
 from interface.components import (
+    alerts_meta,
     alerts_table,
     execution_warning,
     eval_case_choices,
@@ -36,8 +40,10 @@ from interface.components import (
     load_log_entries,
     log_view_html,
     patient_profile,
+    summary_strip,
     trends_view,
 )
+from interface.theme import CSS, HEAD, LOGO_PATH, THEME, THEME_TOGGLE_JS, appbar_html, card_head
 from tools.history_tools import get_patient_history
 from tools.patient_tools import get_medication_schedule, load_patient_data
 
@@ -67,12 +73,24 @@ def _config(thread_id: str) -> dict:
     return {"configurable": {"thread_id": thread_id}, "callbacks": get_callbacks()}
 
 
+def _status_pill() -> tuple[str, bool, str]:
+    """(texto corto, hay LLM, detalle completo) del modo de ejecución, para la barra superior."""
+    if not has_api_key():
+        return "Modo determinístico · sin LLM", False, llm_status()
+    _, model = active_model()
+    return f"LLM · {model.split('/')[-1]}", True, llm_status()
+
+
+def _alerts_head(alerts=None) -> str:
+    return card_head("Alertas", alerts_meta(alerts or []))
+
+
 # -------------------------------------------------------------------
-# Callbacks de la UI — pestaña "Consulta clínica"
+# Callbacks de la UI — pestaña "Consulta"
 # -------------------------------------------------------------------
 
 def on_patient_change(patient_id: str) -> str:
-    """Carga el perfil resumido al seleccionar un paciente (paso 2 del flujo)."""
+    """Carga la ficha del paciente al seleccionarlo (paso 2 del flujo)."""
     metrics = meds = None
     if patient_id:
         try:
@@ -88,10 +106,15 @@ def on_patient_change(patient_id: str) -> str:
 
 
 def analyze(patient_id: str, doctor_context: str):
-    """Lanza el análisis completo (Monitor → Clínico) sobre un paciente nuevo."""
+    """
+    Lanza el análisis completo (Monitor → Clínico) sobre un paciente nuevo.
+
+    Devuelve (chat, thread_id, reporte, alertas, tendencias, indicadores, encabezado de alertas).
+    """
     if not patient_id:
-        aviso = "Seleccioná un paciente antes de analizar."
-        return [{"role": "assistant", "content": aviso}], "", format_report(None), alerts_table([]), trends_view(None)
+        aviso = "Elegí un paciente antes de analizar."
+        return ([{"role": "assistant", "content": aviso}], "", format_report(None), alerts_table(None),
+                trends_view(None), summary_strip(None), _alerts_head())
 
     thread_id = _new_thread_id()
     state_input = {
@@ -103,16 +126,17 @@ def analyze(patient_id: str, doctor_context: str):
     try:
         out = langgraph_app.invoke(state_input, _config(thread_id))
     except Exception as e:
-        err = f"⚠️ Error al ejecutar el análisis: {e}"
-        return [{"role": "assistant", "content": err}], thread_id, format_report(None), alerts_table([]), trends_view(None)
+        err = f"Error al ejecutar el análisis: {e}"
+        return ([{"role": "assistant", "content": err}], thread_id, format_report(None), alerts_table(None),
+                trends_view(None), summary_strip(None), _alerts_head())
 
     # Paciente sin datos en el EHR: se informa y no se muestran alertas ni tendencias (ADR-0003)
     error = out.get("error")
     if error:
-        aviso = f"⚠️ {error}"
-        sin_datos = "_Sin análisis: no hay datos del paciente en el EHR._"
-        reporte = f"### {aviso}\n\nNo se generó reporte: el sistema no analiza pacientes sin datos."
-        return [{"role": "assistant", "content": aviso}], thread_id, format_report(reporte), sin_datos, sin_datos
+        sin_datos = "<p class='tp2-muted'>Sin análisis: no hay datos del paciente en el EHR.</p>"
+        reporte = f"### {error}\n\nNo se generó reporte: el sistema no analiza pacientes sin datos."
+        return ([{"role": "assistant", "content": error}], thread_id, format_report(reporte), sin_datos,
+                sin_datos, summary_strip(None), _alerts_head())
 
     analysis = out.get("analysis")
     alerts = analysis.alerts if analysis else []
@@ -120,15 +144,16 @@ def analyze(patient_id: str, doctor_context: str):
     chat = [{
         "role": "assistant",
         "content": (
-            f"✅ Análisis de **{patient_id}** completado: {len(alerts)} alerta(s). "
-            "El reporte está en el panel principal. Hacé tu pregunta de seguimiento abajo."
+            f"Análisis de **{patient_id}** listo: {len(alerts)} alerta(s). "
+            "El reporte está en el panel central; podés hacer preguntas de seguimiento acá."
             + (f"\n\n{aviso}" if aviso else "")
         ),
     }]
     reporte = format_report(out.get("report"))
     if aviso:
-        reporte = f"{aviso}\n\n{reporte}"
-    return chat, thread_id, reporte, alerts_table(alerts), trends_view(analysis)
+        reporte = f"> {aviso}\n\n{reporte}"
+    return (chat, thread_id, reporte, alerts_table(alerts), trends_view(analysis),
+            summary_strip(analysis), _alerts_head(alerts))
 
 
 def follow_up(message: str, history: list, thread_id: str):
@@ -154,11 +179,11 @@ def follow_up(message: str, history: list, thread_id: str):
         if before and after and after != before:
             # El grafo cambió de paciente (ADR-0004), pero los paneles no se actualizan desde el chat.
             reply += (
-                f"\n\n⚠️ **El análisis cambió de {before} a {after}.** Los paneles de reporte, alertas "
-                f"y tendencias siguen mostrando a {before}: seleccioná {after} y usá **Analizar paciente**."
+                f"\n\n**El análisis cambió de {before} a {after}.** El reporte, las alertas y las "
+                f"tendencias siguen mostrando a {before}: elegí {after} y usá **Analizar paciente**."
             )
     except Exception as e:
-        reply = f"⚠️ Error: {e}"
+        reply = f"Error: {e}"
 
     history = history + [
         {"role": "user", "content": message},
@@ -176,20 +201,21 @@ def save_session(thread_id: str, history: list):
         out = langgraph_app.invoke({"save_requested": True, "query": "guardar sesión"}, _config(thread_id))
         msg = _last_assistant(out.get("conversation", []))
     except Exception as e:
-        msg = f"⚠️ Error al guardar: {e}"
+        msg = f"Error al guardar: {e}"
     return history + [
-        {"role": "user", "content": "💾 Guardar sesión"},
+        {"role": "user", "content": "Guardar sesión"},
         {"role": "assistant", "content": msg},
     ]
 
 
 def reset_session():
     """Limpia la sesión para empezar una consulta nueva."""
-    return [], "", format_report(None), alerts_table([]), trends_view(None), ""
+    return ([], "", format_report(None), alerts_table(None), trends_view(None), summary_strip(None),
+            _alerts_head(), "")
 
 
 # -------------------------------------------------------------------
-# Callbacks de la UI — pestaña "Observabilidad (dev)"
+# Callbacks de la UI — pestaña "Observabilidad"
 # -------------------------------------------------------------------
 
 # Tope de filas que se renderizan en el visor de logs. 50 trazas recientes alcanzan para
@@ -206,15 +232,18 @@ def refresh_logs(event_filter: str) -> str:
     return log_view_html(entries)
 
 
-def _langsmith_md() -> str:
+def _langsmith_html() -> str:
     st = tracing_status()
     activo = st["langsmith_enabled"] and st["has_api_key"]
-    estado = "✅ activo" if activo else "⚠️ inactivo (sin LANGSMITH_API_KEY o tracing off)"
+    pill = ("<span class='tp2-pill is-ok'>LangSmith activo</span>" if activo else
+            "<span class='tp2-pill is-neutral'>LangSmith inactivo</span>")
     proj = st.get("project") or "—"
     return (
-        f"**LangSmith:** {estado} · proyecto `{proj}` · "
-        "[Abrir dashboard](https://smith.langchain.com)\n\n"
-        "Las trazas también se registran localmente en `logs/agent.jsonl` (tabla de abajo)."
+        f"<div class='tp2-card-head'><div style='display:flex;gap:10px;align-items:center'>{pill}"
+        f"<span class='tp2-card-meta'>proyecto <code>{proj}</code> · "
+        "<a href='https://smith.langchain.com' target='_blank' rel='noopener'>abrir dashboard</a></span></div>"
+        "<span class='tp2-card-meta'>Trazas locales en <code>logs/agent.jsonl</code> · "
+        "clic en una fila para ver el JSON</span></div>"
     )
 
 
@@ -269,301 +298,124 @@ def show_eval_case(history, run_idx, case_id):
 # Construcción de la UI
 # -------------------------------------------------------------------
 
-# -------------------------------------------------------------------
-# Identidad visual: tema formal (serif) + CSS de la app
-# -------------------------------------------------------------------
-# Tema pensado para uso clínico: tipografía SERIF (Cambria → Georgia → Times New
-# Roman como cascada del sistema), paleta azul-pizarra sobria y esquinas poco
-# redondeadas para un aire institucional y formal. En Gradio 6 el `theme` y el
-# `css` se pasan a launch() (ya no al constructor de Blocks).
-_THEME = gr.themes.Default(
-    primary_hue=gr.themes.colors.blue,
-    secondary_hue=gr.themes.colors.sky,
-    neutral_hue=gr.themes.colors.slate,
-    text_size=gr.themes.sizes.text_md,
-    spacing_size=gr.themes.sizes.spacing_md,
-    radius_size=gr.themes.sizes.radius_md,
-    # Fuentes del sistema (serif) envueltas en gr.themes.Font: pasarlas como str
-    # crudo rompe la comparación interna de temas en launch() (Font.__eq__ vs str).
-    font=[
-        gr.themes.Font("Cambria"),
-        gr.themes.Font("Georgia"),
-        gr.themes.Font("Times New Roman"),
-        gr.themes.Font("serif"),
-    ],
-    font_mono=[
-        gr.themes.Font("ui-monospace"),
-        gr.themes.Font("Consolas"),
-        gr.themes.Font("SFMono-Regular"),
-        gr.themes.Font("monospace"),
-    ],
-).set(
-    block_title_text_weight="600",
-    block_label_text_weight="600",
-    block_shadow="0 1px 2px rgba(15, 23, 42, 0.04)",
-    button_large_radius="*radius_md",
-    button_small_radius="*radius_md",
-    button_primary_background_fill="*primary_600",
-    button_primary_background_fill_hover="*primary_700",
-    button_primary_text_color="white",
-)
-
-# CSS de toda la app. Reforzamos la tipografía serif en el contenido Markdown,
-# damos un look de tarjeta a los paneles, estilamos tablas (alertas/tendencias) y
-# la cabecera institucional. Usamos variables del tema (--primary-*, --border-color-*,
-# etc.) para que todo respete claro/oscuro automáticamente. Al final van los estilos
-# del visor de logs (clase tp2-logs que emite components.log_view_html).
-_APP_CSS = """
-/* ===== Tipografía serif en todo el contenido ===== */
-.gradio-container, .gradio-container .prose,
-.gradio-container input, .gradio-container textarea,
-.gradio-container button, .gradio-container select, .gradio-container label {
-  font-family: "Cambria", "Georgia", "Times New Roman", serif;
-}
-/* Mantener monoespaciado donde corresponde (código, logs) */
-.gradio-container .prose code, .gradio-container .prose pre,
-.gradio-container code, .tp2-logs, .tp2-logs * { font-family: var(--font-mono); }
-
-/* Legibilidad del contenido: interlineado cómodo y separadores sutiles */
-.gradio-container .prose { line-height: 1.65; }
-.gradio-container .prose p { margin: 0.5em 0; }
-.gradio-container .prose ul, .gradio-container .prose ol { margin: 0.35em 0 0.7em; }
-.gradio-container .prose li { margin: 0.15em 0; }
-.gradio-container .prose hr { border: none; height: 1px; margin: 1.15em 0;
-  background: var(--border-color-primary); opacity: 0.55; }
-
-/* ===== Cabecera institucional ===== */
-.tp2-header-wrap { border: none !important; background: transparent !important;
-  box-shadow: none !important; padding: 0 !important; }
-#tp2-header { background: linear-gradient(135deg, var(--primary-700), var(--primary-500));
-  border: 1px solid var(--primary-800); border-radius: 14px; padding: 26px 30px;
-  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.18); }
-#tp2-header .tp2-title { margin: 0; color: #fff; font-size: 1.95rem; font-weight: 700;
-  letter-spacing: 0.2px; line-height: 1.2; }
-#tp2-header .tp2-subtitle { margin: 8px 0 0; color: rgba(255, 255, 255, 0.92);
-  font-size: 1.05rem; }
-#tp2-header .tp2-disclaimer { display: inline-block; margin-top: 14px; padding: 5px 14px;
-  font-size: 0.85rem; font-style: italic; color: #fff; background: rgba(255, 255, 255, 0.16);
-  border: 1px solid rgba(255, 255, 255, 0.28); border-radius: 999px; }
-
-/* ===== Tarjetas / paneles =====
-   Usamos gr.Column (no gr.Group) para evitar divisores internos y dobles bordes.
-   La tarjeta tiene fondo propio + sombra suave en capas → profundidad sin líneas duras.
-   Los Markdown internos de Gradio ya son transparentes, así que el contenido vive
-   directamente sobre la tarjeta (sin efecto "caja dentro de caja"). */
-.tp2-card { background: var(--block-background-fill);
-  border: 1px solid var(--border-color-primary); border-radius: 16px;
-  padding: 18px 22px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 6px 18px rgba(15, 23, 42, 0.06); }
-.tp2-toolbar { padding-bottom: 20px; }
-
-/* Perfil del paciente: tarjeta fina con borde neutro uniforme */
-.tp2-profile { padding: 12px 18px !important; border: 1px solid var(--border-color-primary);
-  border-radius: 12px;
-  background: var(--block-background-fill);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04); }
-
-/* ===== Encabezados de contenido del agente (reporte) ===== */
-.gradio-container .prose h1 { font-size: 1.45rem; margin: 0.2em 0 0.5em; }
-.gradio-container .prose h2 { font-size: 1.2rem; color: var(--body-text-color);
-  border-bottom: 1px solid var(--border-color-primary); padding-bottom: 5px;
-  margin: 1em 0 0.6em; }
-.gradio-container .prose h3 { font-size: 1.08rem; margin: 0.9em 0 0.4em; }
-.gradio-container .prose blockquote { border-left: 3px solid var(--primary-500);
-  background: var(--background-fill-secondary); padding: 10px 16px; border-radius: 10px;
-  font-style: italic; color: var(--body-text-color-subdued); margin: 0.8em 0; }
-
-/* ===== Títulos de sección: texto de alto contraste + filete de acento =====
-   (van DESPUÉS de las reglas de .prose para ganar el empate de especificidad). */
-.gradio-container .tp2-section-title h2, .gradio-container .tp2-section-title h3,
-.gradio-container .tp2-section-title h4 { color: var(--body-text-color); font-weight: 700;
-  letter-spacing: 0.2px; border: none; border-bottom: 2px solid var(--primary-500);
-  display: inline-block; padding: 0 2px 5px 0; margin: 0 0 14px; }
-
-/* ===== Pestañas ===== */
-.gradio-container button[role="tab"] { font-size: 1.02rem; font-weight: 600;
-  letter-spacing: 0.2px; }
-.gradio-container button[role="tab"][aria-selected="true"] { font-weight: 700; }
-
-/* ===== Tablas (alertas / tendencias / reporte) ===== */
-.gradio-container .prose table { border-collapse: collapse; width: 100%;
-  margin: 0.4rem 0 0.9rem; font-size: 0.93rem; border: 1px solid var(--border-color-primary); }
-.gradio-container .prose thead th { background: var(--background-fill-secondary);
-  color: var(--body-text-color); font-weight: 700; text-align: left; padding: 9px 12px;
-  border-bottom: 2px solid var(--border-color-primary); white-space: nowrap; }
-.gradio-container .prose tbody td { padding: 8px 12px; vertical-align: top;
-  border-bottom: 1px solid var(--border-color-primary); }
-.gradio-container .prose tbody tr:nth-child(even) td {
-  background: color-mix(in srgb, var(--background-fill-secondary) 45%, transparent); }
-.gradio-container .prose tbody tr:hover td {
-  background: color-mix(in srgb, var(--primary-100) 50%, transparent); }
-
-/* ===== Botones primarios (degradado sobrio + leve elevación al hover) ===== */
-.gradio-container button.primary { font-weight: 700; letter-spacing: 0.3px; border: none;
-  background: linear-gradient(135deg, var(--primary-500), var(--primary-700));
-  transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease; }
-.gradio-container button.primary:hover { transform: translateY(-1px); filter: brightness(1.04);
-  box-shadow: 0 6px 16px color-mix(in srgb, var(--primary-600) 38%, transparent); }
-
-/* ===== Visor de logs (pestaña Observabilidad) ===== */
-.tp2-logs { font-size: 12px; max-height: 460px; overflow-y: auto;
-  border: 1px solid var(--border-color-primary); border-radius: 6px; }
-.tp2-head, .tp2-cells { display: grid; gap: 8px; align-items: center;
-  grid-template-columns: 96px 84px 150px 1fr; padding: 5px 10px; }
-.tp2-head { position: sticky; top: 0; z-index: 1; font-weight: 600;
-  background: var(--background-fill-secondary);
-  border-bottom: 1px solid var(--border-color-primary); }
-.tp2-row { border-bottom: 1px solid var(--border-color-primary); }
-.tp2-row > summary { cursor: pointer; list-style: none; }
-.tp2-row > summary::-webkit-details-marker { display: none; }
-.tp2-row > summary:hover { background: var(--background-fill-secondary); }
-.tp2-ts::before { content: "▸ "; color: var(--body-text-color-subdued); }
-.tp2-row[open] > summary .tp2-ts::before { content: "▾ "; }
-.tp2-nm, .tp2-sm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tp2-ev { color: var(--body-text-color-subdued); }
-.tp2-raw { margin: 0; padding: 8px 12px; white-space: pre-wrap; word-break: break-word;
-  font-size: 11px; background: var(--background-fill-secondary); }
-.tp2-empty { padding: 14px; color: var(--body-text-color-subdued); }
-
-/* ===== Evaluación (pestaña de comparación esperado vs. obtenido) ===== */
-/* Tira de contexto del caso: tarjeta fina con borde neutro uniforme, igual que el perfil. */
-.tp2-eval-context { padding: 12px 18px !important; border: 1px solid var(--border-color-primary);
-  border-radius: 12px;
-  background: var(--block-background-fill);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04); margin: 6px 0 4px; }
-.tp2-eval-context h4 { margin: 0 0 6px; }
-/* Las dos columnas a la misma altura, con scroll interno para reportes largos. */
-.tp2-eval-panel { height: 100%; }
-.tp2-eval-expected, .tp2-eval-obtained { max-height: 540px; overflow-y: auto;
-  padding: 4px; }
-"""
-
-
 def build_demo() -> gr.Blocks:
-    with gr.Blocks(title="Monitor Clínico — Diabetes") as demo:
+    with gr.Blocks(title="Monitor Clínico · Diabetes tipo 2") as demo:
+        # Barra superior: marca, modo de ejecución del LLM (ADR-0018) y selector de tema.
         gr.HTML(
-            "<div id='tp2-header'>"
-            "<h1 class='tp2-title'>🩺 Monitor Clínico · Diabetes tipo 2</h1>"
-            "<p class='tp2-subtitle'>Sistema multiagente de soporte a la decisión clínica</p>"
-            "<span class='tp2-disclaimer'>"
-            "Este sistema no emite diagnósticos, es solo un insumo para el médico tratante."
-            "</span></div>",
-            elem_classes="tp2-header-wrap",
+            appbar_html(*_status_pill()),
+            js_on_load=THEME_TOGGLE_JS,
+            elem_classes="tp2-appbar-wrap",
         )
-        # Modo de ejecución visible: sin API key los reportes son de los fallbacks determinísticos.
-        gr.Markdown(("🟢 " if has_api_key() else "⚠️ ") + llm_status())
 
         thread_state = gr.State("")
 
-        with gr.Tabs():
-            # ---------------- Pestaña 1: Consulta clínica ----------------
-            with gr.Tab("🗂  Consulta clínica"):
-                with gr.Column(elem_classes="tp2-card tp2-toolbar"):
-                    gr.Markdown("#### Nueva consulta", elem_classes="tp2-section-title")
+        with gr.Tabs(elem_classes="tp2-tabs"):
+            # ---------------- Pestaña 1: Consulta ----------------
+            with gr.Tab("Consulta"):
+                with gr.Row(equal_height=False):
+                    # Columna izquierda: paciente + contexto + acción
+                    with gr.Column(scale=3, min_width=280, elem_classes="tp2-sidebar"):
+                        with gr.Column(elem_classes="tp2-card"):
+                            gr.HTML("<p class='tp2-eyebrow'>Paciente</p>")
+                            patient_dd = gr.Dropdown(
+                                choices=list_patients(), value=None, show_label=False,
+                                container=False, info=None,
+                            )
+                            profile_html = gr.HTML(patient_profile("", None, None))
+                        with gr.Column(elem_classes="tp2-card"):
+                            gr.HTML("<p class='tp2-eyebrow'>Contexto clínico</p>")
+                            context_tb = gr.Textbox(
+                                show_label=False, container=False, lines=4,
+                                placeholder="Opcional: síntomas recientes, eventos intercurrentes, "
+                                            "adherencia referida…",
+                            )
+                            analyze_btn = gr.Button(
+                                "Analizar paciente", variant="primary", size="lg",
+                                elem_classes="tp2-primary-btn",
+                            )
+
+                    # Área principal: indicadores → reporte + chat → alertas y tendencias a lo ancho
+                    with gr.Column(scale=10, min_width=520):
+                        summary_html = gr.HTML(summary_strip(None))
+                        with gr.Row(equal_height=False):
+                            with gr.Column(scale=7, min_width=420):
+                                with gr.Column(elem_classes="tp2-card"):
+                                    gr.HTML(card_head("Reporte clínico", "Agente Clínico · guías + historial"))
+                                    report_md = gr.Markdown(format_report(None))
+                            # Chat de seguimiento, fijo al hacer scroll por el reporte
+                            with gr.Column(scale=5, min_width=320, elem_classes="tp2-chat-col"):
+                                with gr.Column(elem_classes="tp2-card"):
+                                    gr.HTML(card_head("Seguimiento", "Preguntas sobre el reporte"))
+                                    chatbot = gr.Chatbot(
+                                        show_label=False, height=420, buttons=["copy_all"],
+                                        placeholder="Analizá un paciente para habilitar el seguimiento.",
+                                    )
+                                    query_tb = gr.Textbox(
+                                        show_label=False, submit_btn=True, container=False,
+                                        placeholder="Escribí una pregunta…",
+                                    )
+                                    with gr.Row(elem_classes="tp2-chat-actions"):
+                                        save_btn = gr.Button("Guardar sesión", variant="secondary", size="md")
+                                        reset_btn = gr.Button("Nueva consulta", variant="secondary", size="md")
+                        with gr.Column(elem_classes="tp2-card"):
+                            alerts_head = gr.HTML(_alerts_head())
+                            alerts_html = gr.HTML(alerts_table(None))
+                        with gr.Column(elem_classes="tp2-card"):
+                            gr.HTML(card_head("Tendencias", "Agente Monitor · ventana analizada"))
+                            trends_html = gr.HTML(trends_view(None))
+
+            # ---------------- Pestaña 2: Observabilidad ----------------
+            with gr.Tab("Observabilidad") as obs_tab:
+                with gr.Column(elem_classes="tp2-card"):
+                    gr.HTML(_langsmith_html())
                     with gr.Row():
-                        patient_dd = gr.Dropdown(
-                            choices=list_patients(), label="Paciente", scale=2,
-                            info="Datos cargados desde el EHR (data/sample/).",
+                        event_filter_dd = gr.Dropdown(
+                            choices=["todos", "node", "routing", "llm", "tool"],
+                            value="todos", label="Tipo de evento", scale=4,
                         )
-                        context_tb = gr.Textbox(
-                            label="Contexto clínico adicional (opcional)", scale=3, lines=2,
-                            placeholder="Síntomas recientes, eventos intercurrentes, adherencia referida…",
-                        )
-                        analyze_btn = gr.Button(
-                            "Analizar paciente", variant="primary", scale=1, size="lg",
-                        )
+                        refresh_btn = gr.Button("Refrescar", variant="secondary", scale=1)
+                    # Visor liviano: HTML estático con filas expandibles (components.log_view_html).
+                    # Reemplaza al gr.Dataframe, cuyo montaje en el navegador congelaba la pestaña
+                    # ~15 s la primera vez que se abría. El HTML se pinta en milisegundos.
+                    logs_html = gr.HTML(log_view_html([]))
 
-                profile_md = gr.Markdown(
-                    "_Seleccioná un paciente para ver su perfil._",
-                    elem_classes="tp2-profile",
-                )
-
-                with gr.Row():
-                    # Panel principal: reporte clínico
-                    with gr.Column(scale=2):
-                        with gr.Column(elem_classes="tp2-card"):
-                            gr.Markdown("### Reporte clínico", elem_classes="tp2-section-title")
-                            report_md = gr.Markdown(format_report(None))
-                        with gr.Accordion("🔔  Alertas detectadas", open=True):
-                            alerts_md = gr.Markdown(alerts_table([]))
-                        with gr.Accordion("📈  Tendencias por métrica", open=False):
-                            trends_md = gr.Markdown(trends_view(None))
-
-                    # Panel secundario: chat de seguimiento
-                    with gr.Column(scale=1):
-                        with gr.Column(elem_classes="tp2-card"):
-                            gr.Markdown("### Seguimiento", elem_classes="tp2-section-title")
-                            chatbot = gr.Chatbot(
-                                label="Conversación", height=380, buttons=["copy_all"],
-                                placeholder="El chat se habilita tras analizar un paciente.",
-                            )
-                            query_tb = gr.Textbox(
-                                show_label=False, submit_btn=True,
-                                placeholder="Pregunta de seguimiento sobre el reporte…",
-                            )
-                            with gr.Row():
-                                save_btn = gr.Button("💾  Guardar sesión", variant="secondary")
-                                reset_btn = gr.Button("Nueva sesión")
-
-            # ---------------- Pestaña 2: Observabilidad (dev) ----------------
-            with gr.Tab("🛠  Observabilidad (dev)") as obs_tab:
-                langsmith_md = gr.Markdown(_langsmith_md())
-                with gr.Row():
-                    event_filter_dd = gr.Dropdown(
-                        choices=["todos", "node", "routing", "llm", "tool"],
-                        value="todos", label="Filtrar por tipo de evento", scale=3,
-                    )
-                    refresh_btn = gr.Button("🔄 Refrescar", scale=1)
-                gr.Markdown(
-                    "_Trazas (`logs/agent.jsonl`) — hacé clic en una fila para ver su JSON crudo:_"
-                )
-                # Visor liviano: HTML estático con filas expandibles (components.log_view_html).
-                # Reemplaza al gr.Dataframe, cuyo montaje en el navegador congelaba la pestaña
-                # ~15 s la primera vez que se abría. El HTML se pinta en milisegundos.
-                logs_html = gr.HTML(log_view_html([]))
-
-            # ---------------- Pestaña 3: Evaluación (dev) ----------------
+            # ---------------- Pestaña 3: Evaluación ----------------
             # Lee el artefacto logs/eval_report.json (lo produce tests/eval_runner.py) y muestra
             # una comparación clara esperado vs. obtenido por caso, para puntuar la calidad a ojo.
-            with gr.Tab("🧪  Evaluación") as eval_tab:
+            with gr.Tab("Evaluación") as eval_tab:
                 eval_state = gr.State([])  # historial de corridas cargado (lista)
-                with gr.Row():
-                    eval_history_summary = gr.Markdown(eval_history_summary_md(None), scale=4)
-                    eval_refresh_btn = gr.Button("🔄 Refrescar", scale=1)
-                with gr.Row():
-                    eval_run_dd = gr.Dropdown(
-                        choices=[], label="Corrida", scale=2,
-                        info="Cada ejecución de eval_runner.py agrega una corrida al historial.",
-                    )
-                    eval_case_dd = gr.Dropdown(
-                        choices=[], label="Caso de evaluación", scale=3,
-                        info="Casos evaluados en la corrida seleccionada.",
-                    )
-                eval_summary = gr.Markdown(eval_summary_md(None))
-                eval_context_md = gr.Markdown(
-                    "_Seleccioná un caso para ver la comparación._",
-                    elem_classes="tp2-eval-context",
-                )
+                with gr.Column(elem_classes="tp2-card"):
+                    with gr.Row():
+                        eval_history_summary = gr.Markdown(eval_history_summary_md(None))
+                        eval_refresh_btn = gr.Button("Refrescar", variant="secondary", scale=0, min_width=120)
+                    with gr.Row():
+                        eval_run_dd = gr.Dropdown(
+                            choices=[], label="Corrida", scale=2,
+                            info="Cada ejecución de eval_runner.py agrega una corrida al historial.",
+                        )
+                        eval_case_dd = gr.Dropdown(
+                            choices=[], label="Caso de evaluación", scale=3,
+                            info="Casos evaluados en la corrida seleccionada.",
+                        )
+                    eval_summary = gr.Markdown(eval_summary_md(None))
+                with gr.Column(elem_classes="tp2-card"):
+                    eval_context_md = gr.Markdown("_Elegí un caso para ver la comparación._")
                 with gr.Row(equal_height=True):
                     with gr.Column(scale=1):
                         with gr.Column(elem_classes="tp2-card tp2-eval-panel"):
-                            gr.Markdown("### ✅ Comportamiento esperado",
-                                        elem_classes="tp2-section-title")
+                            gr.HTML(card_head("Comportamiento esperado"))
                             eval_expected_md = gr.Markdown("", elem_classes="tp2-eval-expected")
                     with gr.Column(scale=1):
                         with gr.Column(elem_classes="tp2-card tp2-eval-panel"):
-                            gr.Markdown("### 🔍 Salida obtenida",
-                                        elem_classes="tp2-section-title")
+                            gr.HTML(card_head("Salida obtenida"))
                             eval_obtained_md = gr.Markdown("", elem_classes="tp2-eval-obtained")
 
         # ---------------- Wiring de eventos ----------------
-        patient_dd.change(on_patient_change, inputs=patient_dd, outputs=profile_md)
+        patient_dd.change(on_patient_change, inputs=patient_dd, outputs=profile_html)
 
-        analyze_btn.click(
-            analyze,
-            inputs=[patient_dd, context_tb],
-            outputs=[chatbot, thread_state, report_md, alerts_md, trends_md],
-        )
+        analysis_outputs = [chatbot, thread_state, report_md, alerts_html, trends_html,
+                            summary_html, alerts_head]
+        analyze_btn.click(analyze, inputs=[patient_dd, context_tb], outputs=analysis_outputs)
 
         query_tb.submit(
             follow_up,
@@ -573,10 +425,7 @@ def build_demo() -> gr.Blocks:
 
         save_btn.click(save_session, inputs=[thread_state, chatbot], outputs=chatbot)
 
-        reset_btn.click(
-            reset_session,
-            outputs=[chatbot, thread_state, report_md, alerts_md, trends_md, context_tb],
-        )
+        reset_btn.click(reset_session, outputs=analysis_outputs + [context_tb])
 
         # Observabilidad: cargar las trazas al ENTRAR a la pestaña (no en el arranque de la
         # app, para no leer el log si el médico nunca abre la vista dev), más refresco manual
@@ -616,7 +465,8 @@ demo = build_demo()
 
 def launch(**kwargs) -> None:
     """Lanza la UI. En Gradio 6 css y theme se pasan a launch() (ya no al constructor de Blocks)."""
-    demo.launch(theme=_THEME, css=_APP_CSS, **kwargs)
+    kwargs.setdefault("favicon_path", str(LOGO_PATH))
+    demo.launch(theme=THEME, css=CSS, head=HEAD, **kwargs)
 
 
 if __name__ == "__main__":
