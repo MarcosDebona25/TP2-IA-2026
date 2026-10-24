@@ -42,7 +42,7 @@ guardadas se conservan entre arranques.
 
 **Sin API key** el sistema funciona igual en **modo determinístico** (fallbacks sin LLM) y la UI
 lo avisa arriba. Con `GROQ_API_KEY` (gratis en [console.groq.com](https://console.groq.com/keys))
-los agentes Monitor y Clínico usan `openai/gpt-oss-120b` (Groq dio de baja Llama 3.3 70B; ver ADR-0014). Con una key de [OpenRouter](https://openrouter.ai) (`LLM_PROVIDER=openrouter`) usan `deepseek/deepseek-v4-flash` (~0,0005 USD por análisis, [ADR-0020](docs/adr/0020-proveedores-openai-compatibles-y-cadena-entre-proveedores.md)); con la API de DeepSeek (`LLM_PROVIDER=openai_compat`, `LLM_BASE_URL=https://api.deepseek.com`, `LLM_MODEL=deepseek-flash`) el razonamiento se desactiva solo ([ADR-0021](docs/adr/0021-deepseek-sin-razonamiento.md)); para Gemini u otros, ver `.env.example`.
+los agentes Monitor y Clínico usan `openai/gpt-oss-120b` (Groq dio de baja Llama 3.3 70B; ver ADR-0014). Con una key de [OpenRouter](https://openrouter.ai) (`LLM_PROVIDER=openrouter`) usan `deepseek/deepseek-v4-flash` (~0,0005 USD por análisis, [ADR-0020](docs/adr/0020-proveedores-openai-compatibles-y-cadena-entre-proveedores.md)); con la API de DeepSeek (`LLM_PROVIDER=openai_compat`, `LLM_BASE_URL=https://api.deepseek.com`, `LLM_MODEL=deepseek-flash`) el razonamiento se desactiva solo ([ADR-0022](docs/adr/0022-deepseek-sin-razonamiento.md)); para Gemini u otros, ver `.env.example`.
 
 | Dónde vive | Qué | Cómo se regenera |
 |---|---|---|

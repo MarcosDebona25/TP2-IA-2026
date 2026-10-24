@@ -38,7 +38,7 @@ los textos que el artículo transcribe (sección 5). Las rutas son relativas a l
 | A4 | Historial "almacenado en MongoDB" | SQLite local por defecto; MongoDB intercambiable | `tools/history_store.py:6-7`, `:188`; ADR-0005 |
 | A5 | "los registros conservan las herramientas invocadas, los parámetros y los resultados" | El estado registra los análisis pedidos por el Monitor y el `execution_mode`; el log registra nodos, ruteo y llamadas al LLM con tokens | `interface/logging_config.py`, `agents/monitor.py`; ADR-0009, ADR-0018 |
 | A6 | "Ambos agentes implementan el patrón ReAct" | Modo `lean` por defecto: 2 llamadas con salida estructurada por análisis. ReAct en el seguimiento y en el modo `react`. | `agents/llm_factory.py` (`agent_mode`), `agents/clinical.py`; ADR-0015, ADR-0019 |
-| A7 | "Llama 3.3 70B sobre Groq … Gemini como alternativa" | gpt-oss-120b en Groq por defecto, con cadena de respaldo; Gemini, OpenRouter y APIs compatibles con OpenAI; la evaluación se hizo con deepseek-flash | `agents/llm_factory.py:27-40`; ADR-0014, 0016, 0020, 0021 |
+| A7 | "Llama 3.3 70B sobre Groq … Gemini como alternativa" | gpt-oss-120b en Groq por defecto, con cadena de respaldo; Gemini, OpenRouter y APIs compatibles con OpenAI; la evaluación se hizo con deepseek-flash | `agents/llm_factory.py:27-40`; ADR-0014, 0016, 0020, 0022 |
 | A8 | Degradación: "ejecuta las mismas herramientas" | El Monitor ejecuta las mismas tools; el Clínico arma un reporte plantilla (recuento de alertas y medicación); se registra el motivo | `orchestrator/graph.py:33` (`_fallback_reason`); ADR-0018 |
 | A9 | "variación respecto de la medición previa" | Variación entre el primer y el último registro de la ventana; banda del 3 % sobre la media | `tools/patient_tools.py:167` (`_STABLE_REL_BAND = 0.03`), `:180-201` |
 | A10 | "umbrales diagnósticos y de control de la ADA" | Metas de control de DM2 (SAD 2025, Guía Nacional 2019) e hipoglucemia ADA (< 70 / < 54 mg/dL), con los valores explícitos | `tools/threshold_tools.py:51-88`, `:122`; ADR-0011 |
@@ -57,7 +57,7 @@ los textos que el artículo transcribe (sección 5). Las rutas son relativas a l
 ## 3. Corrida de evaluación con LLM real
 
 - **Comando:** `uv run python tests/eval_runner.py --case happy_02,happy_03,edge_01,edge_03,edge_06,adv_02,adv_03`
-- **Artefacto:** `logs/eval_report.json`, corrida **#57** (última del array), `generated_at` **2026-10-17T00:17:49**, `provider` openai_compat, `model` **deepseek-flash**, razonamiento desactivado (ADR-0021), `case_count` 7, `error_count` 0.
+- **Artefacto:** `logs/eval_report.json`, corrida **#57** (última del array), `generated_at` **2026-10-17T00:17:49**, `provider` openai_compat, `model` **deepseek-flash**, razonamiento desactivado (ADR-0022), `case_count` 7, `error_count` 0.
 - **Revisión en la UI:** pestaña «Evaluación», corrida #57.
 
 | Caso | Estado | Duración | Alertas | Veredicto | Justificación (contra `expected_behavior`) |
@@ -100,7 +100,7 @@ Casos no reportados y su última corrida:
 | OpenAI (2025), gpt-oss model card, arXiv:2508.10925 | arXiv |
 | World Health Organization (2021), ISBN 9789240029200 | who.int/publications/i/item/9789240029200 |
 | Ley 25.326 (2000), B.O. 2/11/2000 | Texto publicado por la HCDN (hcdn.gob.ar, Ley_25326.pdf): define como sensibles los datos referidos a la salud |
-| DeepSeek (2026), API Docs | api-docs.deepseek.com (fuente de ADR-0021) |
+| DeepSeek (2026), API Docs | api-docs.deepseek.com (fuente de ADR-0022) |
 | Lewis et al. (2020): URL corregida a arXiv:2005.11401 | proceedings.neurips.cc y arXiv |
 | LangChain AI (2024): se agrega la URL de LangGraph | langchain-ai.github.io/langgraph |
 | Sociedad Argentina de Diabetes (2025): pasa de "s.f." a Rev. SAD 59(1):29-66 | Encabezado de `data/guias/Guia_SAD_2025.md` |

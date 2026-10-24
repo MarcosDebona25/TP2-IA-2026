@@ -10,16 +10,11 @@ with sync_playwright() as p:
     page = b.new_page(viewport={"width": 1500, "height": 1000}, device_scale_factor=2)
     page.goto(URL, wait_until="load", timeout=60000)
     page.wait_for_timeout(2000)
-    dd = page.get_by_label("Paciente", exact=True)
+    dd = page.locator(".tp2-sidebar input").first
     dd.click(); page.wait_for_timeout(300)
     page.get_by_role("option", name="P003").first.click(); page.wait_for_timeout(800)
-    # Fig. 2: barra de consulta + perfil del paciente
-    toolbar = page.locator(".tp2-toolbar").first
-    profile = page.locator(".tp2-profile").first
-    tb, pb = toolbar.bounding_box(), profile.bounding_box()
-    page.screenshot(path=str(OUT / "fig2_consulta.png"),
-                    clip={"x": tb["x"] - 4, "y": tb["y"] - 4, "width": tb["width"] + 8,
-                          "height": pb["y"] + pb["height"] - tb["y"] + 8})
+    # Fig. 2: barra lateral de consulta (ficha del paciente + contexto + acción)
+    page.locator(".tp2-sidebar").first.screenshot(path=str(OUT / "fig2_consulta.png"))
     page.get_by_role("button", name="Analizar paciente").click()
     page.wait_for_timeout(1500)
     for _ in range(120):
@@ -27,8 +22,9 @@ with sync_playwright() as p:
             break
         page.wait_for_timeout(1000)
     page.wait_for_timeout(2000)
-    acc = page.locator(".block", has_text="Alertas detectadas").filter(has=page.locator("table")).last
-    acc.screenshot(path=str(OUT / "fig3_alertas.png"))
+    alerts = page.locator(".tp2-card").filter(
+        has=page.get_by_role("heading", name="Alertas", exact=True)).filter(has=page.locator("table")).last
+    alerts.screenshot(path=str(OUT / "fig3_alertas.png"))
     page.screenshot(path=str(OUT / "full_p003.png"), full_page=True)
     b.close()
 print("ok")

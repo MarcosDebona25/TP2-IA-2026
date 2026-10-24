@@ -1,4 +1,4 @@
-# ADR-0021 · DeepSeek directo con el razonamiento desactivado
+# ADR-0022 · DeepSeek directo con el razonamiento desactivado
 
 - **Estado:** Aceptado
 - **Fecha:** 2026-10-16

@@ -9,7 +9,7 @@
 #   openrouter    → OPENROUTER_API_KEY   (API compatible con OpenAI; cientos de modelos)
 #   openai_compat → LLM_API_KEY + LLM_BASE_URL (cualquier API compatible con OpenAI: DeepSeek, Cerebras,
 #                   Mistral, OpenCode Zen, Ollama local en http://localhost:11434/v1, etc.)
-#                   Con DeepSeek el razonamiento se desactiva por defecto (LLM_THINKING, ADR-0021).
+#                   Con DeepSeek el razonamiento se desactiva por defecto (LLM_THINKING, ADR-0022).
 #
 # Cadena de respaldo entre proveedores: LLM_FALLBACK_MODELS="gemini:gemini-2.5-flash-lite,groq:openai/gpt-oss-20b"
 # (cada entrada es `proveedor:modelo`; sin prefijo de proveedor conocido, es un modelo del proveedor principal).
@@ -231,7 +231,7 @@ def _build_gemini(model: str, retries: int = 1):
 
 def thinking_mode(base_url: str) -> str | None:
     """
-    Parámetro `thinking` de la API de DeepSeek (ADR-0021): "disabled", "enabled" o None (no se envía).
+    Parámetro `thinking` de la API de DeepSeek (ADR-0022): "disabled", "enabled" o None (no se envía).
 
     DeepSeek razona por defecto y en ese modo rechaza el `tool_choice` forzado de la salida estructurada
     (HTTP 400 "Thinking mode does not support this tool_choice"): el Monitor y el reporte caían al fallback.

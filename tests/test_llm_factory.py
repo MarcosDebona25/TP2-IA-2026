@@ -128,7 +128,7 @@ def test_openai_compat_usa_la_url_configurada(monkeypatch):
 
 
 def test_deepseek_desactiva_el_razonamiento_por_defecto(monkeypatch):
-    """En modo razonamiento DeepSeek rechaza el tool_choice forzado de la salida estructurada (ADR-0021)."""
+    """En modo razonamiento DeepSeek rechaza el tool_choice forzado de la salida estructurada (ADR-0022)."""
     from agents.llm_factory import build_llm
 
     monkeypatch.setenv("LLM_PROVIDER", "openai_compat")
