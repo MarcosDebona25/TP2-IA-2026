@@ -964,3 +964,7 @@ Ajuste de densidad (pedido del grupo, 2026-10-24, después de la primera versió
   avance. La numeración continua expresa el orden: primero la calidad del sistema, después
   los requisitos para el uso clínico. Los números 5 y 6 van sobre círculo #0F766E y el
   encabezado en #0F766E para mantener ese bloque como punto focal. Se quitó la tarjeta.
+- R41. Diapositiva 5: la viñeta "Motivo: evitar pasajes contradictorios" pasa a "Así no se
+  recuperan datos sueltos que se contradigan", a pedido del grupo, para que se entienda sin
+  vocabulario técnico. Mantiene el sentido de las notas (fragmentar el historial podría
+  recuperar pasajes contradictorios).
