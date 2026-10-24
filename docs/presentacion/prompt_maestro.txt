@@ -1,0 +1,973 @@
+PROMPT MAESTRO · PRESENTACIÓN ORAL JIT 2026
+Sistema multi-agente de asistencia al médico en el control de pacientes con diabetes tipo 2
+
+Especificación aprobada para la fase 2 (construcción de diapositivas en claude.ai).
+Rama: presentacion-jit. Generado en la fase 1 el 2026-10-24.
+Exposición: 29 de octubre de 2026. Duración máxima: 10 minutos. 10 diapositivas.
+
+Convenciones de este archivo
+- Los bloques [VISIBLE] ... [/VISIBLE] contienen el texto exacto que se ve en la diapositiva.
+  Cada línea es un elemento de texto. Los rótulos entre corchetes dentro del bloque
+  (por ejemplo "{idea principal}") indican el rol del texto y no se muestran.
+- Los bloques [NOTAS] ... [/NOTAS] contienen las notas del orador, textuales.
+- Las rutas son relativas a la raíz del repositorio. "docx" es docs/JIT_ENTREGA_corrección.docx.
+- Las palabras visibles no incluyen el título ni el texto que aparece dentro de una captura.
+
+
+==========================================================================================
+1. RESULTADO DE LA VERIFICACIÓN DE LA PLANTILLA
+==========================================================================================
+
+Archivo: docs/Plantilla_Presentaciones_JIT_2026_-_V3.pptx
+- Formato: PowerPoint .pptx (Office Open XML), 16:9, 13,333 x 7,5 pulgadas (12192000 x 6858000 EMU).
+  Metadatos: título "Plantilla de presentaciones JIT 2026", generada con PptxGenJS.
+- Layouts: PORTADA, CONTENIDO, GUIA, CIERRE (más DEFAULT vacío). 15 diapositivas de ejemplo:
+  4 portadas (una por categoría), 3 de guía para autores, 7 de contenido y 1 de cierre.
+- Tema "JIT 2026": paleta y tipografía fijas (ver puntos 4 y 5).
+
+¿Exigen usar el archivo oficial tal cual?
+- No. Ni la plantilla ni la rúbrica contienen un texto que exija usar el archivo oficial.
+  Los únicos textos normativos de la plantilla son instrucciones de uso del propio archivo:
+  - Notas de las portadas: "Elegí la portada que corresponde a la categoría de tu trabajo y
+    eliminá las otras tres."
+  - Layout GUIA: "GUÍA PARA AUTORES | ELIMINAR ESTA DIAPOSITIVA ANTES DE PRESENTAR".
+  - Nota de la diapositiva libre: "Diapositiva libre: duplicala si necesitás más (máximo 10 en total)."
+- La rúbrica (docs/Rubrica_Oral_2026.xlsx) no menciona plantilla ni formato.
+- Conclusión: alcanza con respetar el diseño de la plantilla. Se puede usar Claude Slides
+  siempre que reproduzca los elementos fijos listados abajo.
+
+¿Exige logos o elementos en todas las diapositivas?
+- Sí, por diseño. Todos los layouts (PORTADA, CONTENIDO, GUIA, CIERRE) incluyen como
+  elementos fijos del layout, no editables desde la diapositiva:
+  - Logo JIT 2026 (ppt/media/image2.png, cuadro violeta con "JIT 2026", e image1.png, marca
+    "Jóvenes Investigadores Tecnológicos"). Posición: PORTADA arriba a la izquierda
+    (x 0,50 y 0,45 pulgadas, 3,79 x 1,20), CONTENIDO arriba a la derecha (x 10,63 y 0,45,
+    2,20 x 0,70), CIERRE centrado (x 4,37 y 1,45, 4,60 x 1,46).
+  - Banda "UTN SANTA FE" (ppt/media/image3.png) abajo a la derecha (x 11,14 y 6,80, 1,68 x 0,33).
+  - Línea inferior tricolor en y 6,93: violeta #582899 (7,70 pulgadas), turquesa #03D1CC
+    (0,40) y amarillo #FED41E (1,30).
+  - CONTENIDO agrega el número de diapositiva abajo a la izquierda (11 pt, #6E6780).
+- No exige el logo del trabajo. El logo del TP va solo en la portada (consigna del grupo).
+  El logo UTN Santa Fe ya está presente en todas las diapositivas a través de la banda fija.
+
+¿Fijan cantidad de diapositivas o tiempos?
+- Plantilla, diapositiva "Contenido sugerido": "La cantidad de diapositivas no debe ser superior a 10."
+- Plantilla, diapositiva "Recomendaciones": "Recordá que solo tenés 10 minutos para presentar todo tu trabajo."
+- Rúbrica: no fija cantidad ni minutos. El criterio 4 (TIEMPO) evalúa el ajuste "a lo previsto".
+- Esta especificación usa exactamente 10 diapositivas y una duración estimada de 7,7 minutos (7:40)
+  (ver punto 6, resumen de tiempos).
+
+Recomendaciones de formato de la plantilla (layout GUIA), que se respetan:
+- "No coloques mucho texto." "Solo párrafos o palabras clave."
+- "Recordá que la presentación es un apoyo de lo que vas a decir verbalmente."
+- "Números o imágenes clave pueden hacer un buen énfasis que aporte a tu discurso."
+- Evitar: "Letra de tamaño menor a 14", "Fuentes difíciles de leer", "Contrastes incorrectos".
+- "Contenido sugerido": Introducción, Objetivos, Metodología, Resultados y discusión,
+  Conclusiones (ver el mapeo en el punto 11, conflicto C3).
+
+
+==========================================================================================
+2. RESUMEN DEL TP
+==========================================================================================
+
+1. Sistema multi-agente de soporte a la decisión para el seguimiento de pacientes con DM2.
+   No emite diagnósticos (docx Resumen, README.md).
+2. Tres agentes sobre LangGraph: Orquestador, Monitor y Clínico (orchestrator/graph.py, build_graph).
+3. El Monitor calcula con herramientas determinísticas: estadísticas y alertas por metas de
+   control (tools/patient_tools.py, tools/threshold_tools.py).
+4. El Clínico interpreta con RAG sobre 3584 fragmentos de guías en ChromaDB y con el historial
+   en SQLite (rag/retriever.py, tools/history_store.py, agents/clinical.py).
+5. Decisión central: el modelo de lenguaje nunca hace un cálculo que deba ser exacto
+   (docx Trabajos relacionados, último párrafo).
+6. Interfaz web Gradio con pestañas Consulta, Observabilidad y Evaluación (interface/app.py).
+7. Estado: prototipo de extremo a extremo, 213 pruebas determinísticas en verde y 12 casos
+   cualitativos (pytest local 2026-10-24, tests/cases/*.json, docx Estrategia de evaluación).
+8. Debilidad principal observada: pertinencia de algunas citas recuperadas (docx Resultados y discusión).
+
+
+==========================================================================================
+3. CRITERIOS DE LA RÚBRICA Y COBERTURA
+==========================================================================================
+
+Fuente: docs/Rubrica_Oral_2026.xlsx, Hoja1, filas 8 a 11. Escala 1 a 10 por criterio.
+
+| N | Criterio | Nivel "Muy satisfactorio" (9 a 10) | Diapositivas que lo cubren | Cómo |
+|---|---|---|---|---|
+| 1 | DOMINIO DEL TEMA | "Dominio total del tema, sin dudar ni cometer errores conceptuales." | 3, 4, 5, 6 (y 2, 8) | Fundamentación de cada decisión con fuente en el docx y el código: separación cálculo e interpretación (3), elección de LangGraph (4), RAG solo sobre guías (5), reglas de enrutamiento y ciclo acotado (6). Las notas citan valores verificados. |
+| 2 | ORGANIZACIÓN DE LA PRESENTACIÓN | "La presentación está bien organizada, de forma clara y lógica" | 1 a 10 | Secuencia problema, objetivo, arquitectura, componente central, flujo, demostración, estado y futuro. Una idea nueva por diapositiva (tabla de progresión, punto 7). |
+| 3 | EXPOSICIÓN | "Se expresa de manera clara y atrae la atención e interés del público durante toda la presentación" | 2, 5, 7, 8 | Gancho concreto en 2 (hipoglucemia oculta en un promedio), número clave en 5 y 8, captura real en 7 que resuelve el gancho de 2. Notas con transiciones explícitas entre oradores. |
+| 4 | TIEMPO | "El tiempo se ajusta a lo previsto con una conclusión que retoma las ideas principales y redondea la exposición." | 9 (y resumen de tiempos del punto 6) | Duración estimada de 7:40 sobre 10:00. La conclusión oral cierra las notas de la diapositiva 9 sin agregar una diapositiva de conclusiones (ver conflicto C1). |
+
+
+==========================================================================================
+4. PALETA
+==========================================================================================
+
+4.1 Colores que fija la plantilla (prevalecen)
+Origen: docs/Plantilla_Presentaciones_JIT_2026_-_V3.pptx, ppt/theme/theme1.xml, esquema "JIT 2026",
+y colores de los layouts (ppt/slideLayouts/slideLayout2.xml a slideLayout5.xml).
+
+| Rol del tema | Hex | Uso en la plantilla | Uso en esta presentación |
+|---|---|---|---|
+| lt1 (bg1) | #FFFFFF | Fondo de todos los layouts | Fondo de todas las diapositivas |
+| dk1 (tx1) | #2A2438 | Cuerpo de texto, nombres de autores | Texto principal (contraste 14,9:1 sobre blanco) |
+| dk2 (tx2) y accent1 | #582899 | Títulos, "Muchas gracias", tramo largo de la línea inferior | Títulos y texto del cierre (9,6:1 sobre blanco) |
+| accent2 | #03D1CC | Tramo corto de la línea inferior | Solo en la línea fija. No se usa para texto (1,9:1 sobre blanco) |
+| accent3 | #FED41E | Tramo amarillo de la línea inferior | Solo en la línea fija |
+| accent4 | #9767F7 | Rótulos PROYECTO, DIRECTOR/A, AUTOR/ES de la portada | Esos rótulos (texto de 12 pt fijo del layout) |
+| accent6 | #6E6780 | Categoría de la portada, número de diapositiva, subtítulo del cierre | Esos mismos roles y texto de apoyo secundario (5,4:1) |
+| lt2 | #F4F0FA | Sin uso visible en los layouts | Fondo de la imagen de cierre (punto 10) |
+| accent5 | #F98D22 | Sin uso visible en los layouts | No se usa |
+
+4.2 Colores que vienen de la aplicación (en lo que la plantilla deja libre)
+Origen: interface/theme.py, constante _TOKENS_CSS, bloque :root (modo claro, el de las capturas).
+
+| Token | Hex | Uso en esta presentación |
+|---|---|---|
+| --tp-accent | #0F766E | Acento de contenido: número focal de las diapositivas 5 y 8, bordes y flechas de los nodos de agentes en los diagramas, rótulos de las anotaciones de la captura (5,5:1 sobre blanco) |
+| --tp-accent-strong | #115E59 | Texto sobre --tp-accent-soft cuando haga falta más contraste |
+| --tp-accent-soft | #E6F4F1 | Relleno de los nodos de agentes en los diagramas (texto #0F1B2A encima, 15,3:1) |
+| --tp-text | #0F1B2A | Texto dentro de los nodos de los diagramas |
+| --tp-text-muted | #5B6B7D | Rótulos de las aristas de los diagramas y texto de fuentes de datos (5,5:1) |
+| --tp-border | #E2E8F0 | Bordes de los nodos de datos en los diagramas y líneas guía de la imagen de cierre |
+| --tp-sev-mid-fg | #B54708 | Solo para marcar la alerta moderada en la anotación de la diapositiva 7 (5,4:1) |
+
+Colores del modo oscuro de la app (fuente: interface/theme.py, bloque .dark), reservados para el
+plan alternativo del cierre (captura oscurecida): --tp-bg #0B1118 y --tp-accent #2DD4BF.
+
+4.3 Reglas de uso
+- Fondo blanco en todas las diapositivas salvo el cierre (imagen de fondo).
+- Un solo color de acento por diapositiva de contenido: #0F766E.
+- Violeta #582899 reservado a títulos y al texto del cierre. No se mezcla con el teal en un mismo elemento.
+- Sin gradientes. Rellenos planos.
+- Contrastes calculados con la fórmula WCAG 2.x de luminancia relativa.
+
+
+==========================================================================================
+5. FUENTES TIPOGRÁFICAS Y MOTIVO
+==========================================================================================
+
+- Calibri para todo el texto de las diapositivas.
+  Origen: ppt/theme/theme1.xml de la plantilla, fontScheme "JIT 2026" (majorFont y minorFont = Calibri).
+  Motivo: la plantilla la fija en el tema y la plantilla prevalece en lo que fija.
+  Si Claude Slides no dispone de Calibri, usar Carlito (métricamente compatible) y registrarlo
+  en el "Registro de fase 2".
+- Tamaños (de los layouts): título 32 pt negrita #582899, cuerpo 20 pt #2A2438, título de
+  portada 40 pt negrita, cierre 48 pt negrita. Mínimo absoluto 14 pt (plantilla, "Evitar").
+- Fuentes de la aplicación: Plus Jakarta Sans (texto) y JetBrains Mono (código y logs).
+  Origen: interface/theme.py (FONT_SANS, FONT_MONO) e interface/assets/fonts/.
+  Uso: no se usan en las diapositivas porque la plantilla fija Calibri. Aparecen solo dentro
+  de las capturas. Excepción admitida: JetBrains Mono para identificadores de código literales
+  dentro de un diagrama, si la fase 2 decide mostrar alguno (por defecto los diagramas usan
+  rótulos en español, sin identificadores).
+
+
+==========================================================================================
+6. DIAPOSITIVAS
+==========================================================================================
+
+Reglas comunes
+- Layout de la plantilla: diapositiva 1 PORTADA, 2 a 9 CONTENIDO, 10 CIERRE.
+- Área de contenido del layout CONTENIDO: x 0,50 y 1,75 pulgadas, 12,33 x 4,75. Título: x 0,50
+  y 0,50, 9,90 x 0,95. No invadir el logo JIT (arriba a la derecha) ni la franja inferior (y > 6,6).
+- Jerarquía: título, idea principal, apoyo. Un único punto focal por diapositiva.
+- Sin cajas ni tarjetas dentro de otras cajas, sin íconos decorativos, sin gradientes, sin emojis.
+- Palabras prohibidas en todo el material: "potenciar", "robusto", "innovador", "solución integral".
+- Sin em dash ni punto y coma separando ideas.
+
+Resumen de tiempos (130 palabras por minuto)
+
+| Diap. | Orador | Palabras visibles | Palabras de notas | Duración |
+|---|---|---|---|---|
+| 1 | Agüero Gonzalo | portada | 34 | 0:16 |
+| 2 | Agüero Gonzalo | 37 | 125 | 0:58 |
+| 3 | Agüero Gonzalo | 32 | 120 | 0:55 |
+| 4 | Debona Marcos | 24 | 113 | 0:52 |
+| 5 | Debona Marcos | 27 | 119 | 0:55 |
+| 6 | Gaitán Gonzalo | 29 | 119 | 0:55 |
+| 7 | Gaitán Gonzalo | 22 | 115 | 0:53 |
+| 8 | Ocampo Franco | 37 | 114 | 0:53 |
+| 9 | Ocampo Franco | 35 | 115 | 0:53 |
+| 10 | Ocampo Franco | 2 | 0 (frase de cierre libre) | 0:10 (estimado) |
+| Total | | | 974 | 7:40 |
+
+Por integrante: Agüero 2:09, Debona 1:47, Gaitán 1:48, Ocampo 1:56. Margen sobre 10 minutos: 2:20
+para transiciones y cambio de orador. Las preguntas quedan fuera de los 10 minutos.
+
+
+------------------------------------------------------------------------------------------
+DIAPOSITIVA 1 · PORTADA
+------------------------------------------------------------------------------------------
+Título: Sistema multi-agente de asistencia al médico en el control de pacientes con diabetes tipo 2
+Idea única: presentar el trabajo, su marco académico y los integrantes.
+Orador: Agüero Gonzalo
+Duración estimada: 0:16
+
+Contenido visible (por placeholder del layout PORTADA):
+[VISIBLE]
+{categoría, placeholder 1, 18 pt negrita #6E6780} Trabajos en Desarrollo – Estudiantes de grado
+{título, placeholder 2, 40 pt negrita #582899} Sistema multi-agente de asistencia al médico en el control de pacientes con diabetes tipo 2
+{rótulo fijo PROYECTO, placeholder 3, línea 1 negrita} UTN Facultad Regional Santa Fe
+{placeholder 3, línea 2} JIT 2026 · 29 de octubre de 2026
+{rótulo fijo DIRECTOR/A DEL PROYECTO, placeholder 4} Milagros Gutiérrez
+{rótulo fijo AUTOR/ES, placeholder 5, un nombre por línea} Agüero, Gonzalo
+Debona, Marcos
+Gaitán, Gonzalo
+Ocampo, Franco
+[/VISIBLE]
+
+Disposición:
+- Layout PORTADA sin cambios: logo JIT arriba a la izquierda, rótulos PROYECTO, DIRECTOR/A
+  DEL PROYECTO y AUTOR/ES en la fila inferior, banda UTN Santa Fe y línea tricolor fijas.
+- Logo del TP (docs/presentacion/recursos/logo-tp.png) arriba a la derecha, alineado con el
+  logo JIT: alto 1,20 pulgadas, borde derecho en x 12,83, y 0,45.
+- Logo UTN FRSF: lo aporta la banda fija "UTN SANTA FE" del layout. No se agrega otro logo
+  UTN (decisión del grupo, ver conflicto C4).
+- Categoría: la de la plantilla para este trabajo, sin modificar su texto.
+
+Notas del orador:
+[NOTAS]
+Se presenta un trabajo en desarrollo de la cátedra Inteligencia Artificial de la UTN Facultad Regional Santa Fe: un sistema multi-agente que asiste al médico en el control de pacientes con diabetes tipo 2.
+[/NOTAS]
+
+Fuentes:
+- Título: docx, primer párrafo.
+- Categoría: plantilla, diapositiva 1 (portada "Trabajos en Desarrollo – Estudiantes de grado").
+- Facultad, evento, fecha e integrantes: consigna del grupo. Afiliación UTN FRSF: docx, datos de autores.
+- La materia (Inteligencia Artificial) no se muestra en la portada por decisión del grupo. Se nombra en la nota del orador.
+
+
+------------------------------------------------------------------------------------------
+DIAPOSITIVA 2 · Seguimiento de DM2 con datos fragmentados
+------------------------------------------------------------------------------------------
+Título: Seguimiento de DM2 con datos fragmentados
+Idea única: el control de la DM2 exige integrar muchas métricas dispersas y un hallazgo crítico puede pasar inadvertido.
+Orador: Agüero Gonzalo
+Duración estimada: 0:58
+
+[VISIBLE]
+{idea principal} Cada control exige integrar métricas que llegan dispersas.
+{apoyo, fila de rótulos} HbA1c
+Glucemia
+Presión arterial
+Función renal
+Perfil lipídico
+Peso
+Adherencia
+{apoyo} Origen: historia clínica electrónica, laboratorios y dispositivos de monitoreo.
+{punto focal} Una hipoglucemia aislada puede quedar oculta en un promedio normal.
+[/VISIBLE]
+
+Disposición:
+- Idea principal arriba, 28 pt, #2A2438.
+- Debajo, fila horizontal de los siete rótulos, 20 pt, #5B6B7D, separados por espacio, sin cajas.
+- Línea de origen, 18 pt, #6E6780.
+- Punto focal abajo, 28 pt negrita, #0F766E, alineado a la izquierda y con aire arriba.
+
+Notas del orador:
+[NOTAS]
+El punto de partida es la consulta de seguimiento de un paciente con diabetes tipo 2. En cada control, el médico debe integrar hemoglobina glucosilada, glucemia, presión arterial, función renal, perfil lipídico, peso y adherencia al tratamiento, como recomiendan las guías de la Asociación Americana de Diabetes. Esos datos provienen de historias clínicas electrónicas, laboratorios y dispositivos de monitoreo, y llegan fragmentados. En consultorios con alta demanda, esa fragmentación genera una carga cognitiva significativa y aumenta el riesgo de omitir información relevante. Un ejemplo concreto es la hipoglucemia aislada, que puede pasar inadvertida si solo se mira el promedio. Además, la diabetes dispone de metas de control bien definidas, lo que la convierte en un dominio adecuado para un sistema de soporte a la decisión.
+[/NOTAS]
+
+Fuentes:
+- Métricas del seguimiento y recomendación de integrarlas: docx Introducción, párrafo 1 (ADA Professional Practice Committee, 2025).
+- Fragmentación, carga cognitiva y riesgo de omisión: docx Introducción, párrafo 2 (Veinot et al., 2010).
+- Hipoglucemia que pasa inadvertida en el promedio: docx Desarrollo > Agentes y herramientas
+  (detect_threshold_violations) y docs/CLAUDE.md, decisión 10 (los extremos exponen lo que la media esconde).
+- Metas de control definidas: docx Introducción, párrafo 3 (ADA 2024, SAD 2025).
+
+
+------------------------------------------------------------------------------------------
+DIAPOSITIVA 3 · Separar cálculo de interpretación clínica
+------------------------------------------------------------------------------------------
+Título: Separar cálculo de interpretación clínica
+Idea única: el objetivo es un reporte de soporte y el enfoque elegido es que el modelo de lenguaje interprete pero nunca calcule.
+Orador: Agüero Gonzalo
+Duración estimada: 0:55
+
+[VISIBLE]
+{idea principal} Objetivo: reporte de seguimiento con alertas, tendencias y preguntas sugeridas.
+{columna izquierda, rótulo} Cálculo
+{columna izquierda, texto} Herramientas determinísticas, exactas y auditables
+{columna derecha, rótulo} Interpretación
+{columna derecha, texto} Modelo de lenguaje con guías clínicas e historial
+{pie} Soporte a la decisión. No emite diagnósticos.
+[/VISIBLE]
+
+Disposición:
+- Objetivo arriba, 24 pt, #2A2438.
+- Punto focal: dos columnas de igual ancho separadas por una línea vertical fina #E2E8F0.
+  Rótulos "Cálculo" e "Interpretación" 32 pt negrita #0F766E, texto 20 pt #2A2438. Sin cajas.
+- Pie 18 pt #6E6780.
+
+Notas del orador:
+[NOTAS]
+Frente a ese problema, los modelos grandes de lenguaje parecen una ayuda natural, pero presentan limitaciones conocidas: cometen errores en cálculos numéricos, sus resultados no siempre son reproducibles frente a guías estandarizadas y su razonamiento es poco transparente. Por eso, el objetivo del trabajo es un sistema multi-agente que analiza el historial de métricas de un paciente y genera un reporte con alertas, tendencias y preguntas de seguimiento sugeridas. La decisión central es separar estrictamente el cálculo de la interpretación. Las herramientas determinísticas calculan y el modelo de lenguaje interpreta, sin participar nunca en un cálculo que deba ser exacto. El resultado es solo soporte: el sistema no emite diagnósticos y cada reporte lo aclara. Esa separación define la arquitectura.
+[/NOTAS]
+
+Fuentes:
+- Limitaciones de los LLM: docx Resumen.
+- Objetivo y contenido del reporte: docx Introducción, último párrafo de Trabajos relacionados ("En este contexto, el objetivo...").
+- Separación epistemológica cálculo e interpretación: docx Trabajos relacionados, párrafo 3.
+- Sin diagnóstico y aclaración obligatoria: docx Introducción, último párrafo, y agents/report.py (ensure_disclaimer).
+
+
+------------------------------------------------------------------------------------------
+DIAPOSITIVA 4 · Tres agentes sobre un grafo LangGraph
+------------------------------------------------------------------------------------------
+Título: Tres agentes sobre un grafo LangGraph
+Idea única: la arquitectura reparte responsabilidades y fuentes de datos entre tres agentes que comparten un estado.
+Orador: Debona Marcos
+Duración estimada: 0:52
+
+[VISIBLE]
+{diagrama D1, nodos} Médico
+Orquestador
+enruta cada mensaje
+Monitor
+calcula
+Clínico
+interpreta
+EHR y medicación
+Historial de sesiones (SQLite)
+Guías clínicas (ChromaDB)
+Estado compartido de la sesión
+[/VISIBLE]
+
+Disposición:
+- Diagrama D1 (punto 8) ocupando el área de contenido completa. Es el punto focal.
+- Sin texto adicional fuera del diagrama.
+
+Notas del orador:
+[NOTAS]
+Esa separación entre cálculo e interpretación se traduce en tres agentes coordinados sobre LangGraph, un marco que modela la ejecución como un grafo dirigido. Se eligió porque el flujo incluye ciclos condicionales de refinamiento, que un encadenamiento lineal no permite expresar. El Orquestador recibe cada mensaje del médico y decide qué camino seguir. El Monitor se ocupa del análisis cuantitativo y accede solo a datos primarios: la historia clínica electrónica y la medicación activa. El Clínico interpreta con fuentes secundarias: el historial de sesiones previas, guardado en SQLite, y las guías clínicas indexadas en ChromaDB. Todos los nodos leen y escriben un estado compartido, lo que permite rastrear cada paso de la sesión.
+[/NOTAS]
+
+Fuentes:
+- Grafo y nodos orchestrator, monitor, clinical, save: orchestrator/graph.py, build_graph (líneas 465 a 512).
+- Motivo de LangGraph: docx Desarrollo > Arquitectura del sistema, párrafo 1.
+- Fuentes de cada agente: docx Desarrollo > Arquitectura del sistema, párrafo 4. EHR desde
+  data/sample/*.csv (tools/patient_tools.py, SAMPLE_DATA_DIR), historial en SQLite
+  (tools/history_store.py, data/tp2.db), guías en ChromaDB (rag/retriever.py, data/chroma_db/).
+- Estado compartido: orchestrator/state.py (AgentState) y checkpointer MemorySaver en orchestrator/graph.py.
+
+
+------------------------------------------------------------------------------------------
+DIAPOSITIVA 5 · Clínico anclado en guías con RAG
+------------------------------------------------------------------------------------------
+Título: Clínico anclado en guías con RAG
+Idea única: el componente de IA central es el Clínico, un modelo de lenguaje que interpreta solo con evidencia recuperada de guías oficiales.
+Orador: Debona Marcos
+Duración estimada: 0:55
+
+[VISIBLE]
+{punto focal, número} 3584
+{rótulo del número} fragmentos de guías clínicas indexados
+{apoyo} SAD 2025 · Guía Nacional 2019 · ADA 2024
+{apoyo} El reporte cita solo fragmentos recuperados.
+{apoyo} El historial se consulta por identificador, sin RAG.
+[/VISIBLE]
+
+Disposición:
+- Número 3584 a la izquierda, 96 pt negrita #0F766E, con su rótulo debajo en 20 pt #2A2438.
+- A la derecha, las tres líneas de apoyo en 20 pt, la de fuentes en #6E6780.
+
+Notas del orador:
+[NOTAS]
+De esos tres agentes, el componente de inteligencia artificial central es el Clínico: un modelo de lenguaje que interpreta mediante generación aumentada por recuperación. En lugar de confiar en lo que el modelo retiene de su entrenamiento, el sistema recupera fragmentos de un corpus controlado de 3584 pasajes, tomados de la guía de la Sociedad Argentina de Diabetes, la guía nacional y los estándares de la Asociación Americana de Diabetes. Los embeddings son multilingües y se calculan localmente. El Clínico devuelve una salida estructurada con los identificadores de los fragmentos que usa, y el código arma el reporte citando solo lo recuperado. El historial del paciente, en cambio, se consulta de forma exacta, porque fragmentarlo podría recuperar pasajes contradictorios.
+[/NOTAS]
+
+Fuentes:
+- 3584 fragmentos: data/chroma_db, colección guias_clinicas, conteo verificado el 2026-10-24
+  (1863 guía nacional, 577 SAD 2025, 1144 en cuatro secciones ADA 2024), coincide con docx
+  Desarrollo > Agentes y herramientas (search_clinical_guidelines).
+- Corpus: data/guias/ (Guia_SAD_2025.md, guia-nacional-...-2019.md, ADA_2024_S02, S06, S09, S10).
+- Embeddings locales multilingües: rag/config.py (MULTILINGUAL_MODEL = paraphrase-multilingual-MiniLM-L12-v2), ADR-0017.
+- Salida estructurada con fragment_ids y citas resueltas por código: agents/report.py
+  (ClinicalReport, _cite), ADR-0019.
+- RAG solo sobre guías y no sobre el historial: docx Desarrollo > Agentes y herramientas,
+  último párrafo, y docs/CLAUDE.md, decisión 2.
+- Motivo general de RAG: docx Trabajos relacionados, párrafos 1 y 2 (Lewis et al., 2020, Zakka et al., 2024).
+
+
+------------------------------------------------------------------------------------------
+DIAPOSITIVA 6 · Enrutamiento y ciclo de refinamiento
+------------------------------------------------------------------------------------------
+Título: Enrutamiento y ciclo de refinamiento
+Idea única: reglas determinísticas deciden el camino de cada mensaje y un ciclo acotado refina el análisis.
+Orador: Gaitán Gonzalo
+Duración estimada: 0:55
+
+[VISIBLE]
+{diagrama D2, nodos y rótulos} Mensaje del médico
+Orquestador
+nuevo análisis
+seguimiento
+confirmar guardado
+cancelar
+Monitor
+Clínico
+Guardado
+Fin
+sin datos del paciente
+¿Información suficiente?
+no: vuelve al Monitor (máximo 3 ciclos)
+sí: reporte
+[/VISIBLE]
+
+Disposición:
+- Diagrama D2 (punto 8) ocupando el área de contenido. Es el punto focal.
+- El ciclo Clínico a Monitor se dibuja con la arista en #0F766E, el resto de aristas en #5B6B7D.
+
+Notas del orador:
+[NOTAS]
+Con los agentes y sus fuentes definidos, interesa ver cómo circula una consulta por el grafo. El Orquestador no necesita comandos explícitos: aplica reglas determinísticas sobre el estado de la sesión. Si todavía no hay reporte, si se pide un nuevo análisis o si se menciona a otro paciente, ejecuta el flujo completo. Si ya existe un reporte, deriva la pregunta directamente al Clínico como seguimiento. La sesión solo se guarda ante una confirmación explícita del médico. En el flujo completo, el Monitor decide en una sola llamada qué ventana temporal analizar, y las herramientas calculan. Si alguna métrica no reúne registros suficientes, el grafo vuelve al Monitor para analizar la serie completa, con un límite de tres ciclos.
+[/NOTAS]
+
+Fuentes:
+- Aristas pipeline, followup, save y cancel: orchestrator/graph.py, route_from_orchestrator (líneas 414 a 428) y build_graph.
+- Reglas de seguimiento, confirmación y cancelación: orchestrator/router.py (is_followup_message,
+  is_confirmation_message, is_cancellation_message, extract_patient_id, is_reset_message).
+- Sin datos del paciente termina sin Clínico: orchestrator/graph.py, route_after_monitor (líneas 431 a 436), ADR-0003.
+- Ciclo de refinamiento con tope de 3: orchestrator/graph.py, decide_next (líneas 439 a 458), ADR-0010.
+- Monitor en una llamada que elige la ventana: agents/monitor.py (modo lean, líneas 196 a 230), ADR-0015,
+  y docx Desarrollo > Agentes y herramientas, párrafo 1.
+- Criterio de suficiencia: docx Desarrollo > Arquitectura del sistema, párrafo 3.
+
+
+------------------------------------------------------------------------------------------
+DIAPOSITIVA 7 · Monitor Clínico analizando a P003
+------------------------------------------------------------------------------------------
+Título: Monitor Clínico analizando a P003
+Idea única: en la app real, una hipoglucemia que el promedio oculta aparece como alerta calculada y trazable.
+Orador: Gaitán Gonzalo
+Duración estimada: 0:53
+
+[VISIBLE]
+{anotación 1, sobre la tabla Tendencias} Media en ayunas 87,4 mg/dL: dentro de la meta
+{anotación 2, sobre la tabla Alertas, en #B54708} Mínimo 55 mg/dL: alerta de hipoglucemia moderada
+{pie} Captura real · LLM deepseek-flash · paciente sintético
+[/VISIBLE]
+
+Disposición:
+- Punto focal: docs/presentacion/capturas/05-alertas-tendencias.png recortada a la región de
+  las tarjetas Alertas y Tendencias (en la captura de 1920 x 1080, aproximadamente x 470 a 1890,
+  y 385 a 1065), escalada al ancho del área de contenido.
+- Dos anotaciones con una línea guía fina hacia la fila correspondiente: la 1 apunta a la fila
+  "Glucosa en ayunas" de Tendencias (media 87.4, mínimo 55), la 2 a la fila A1 de Alertas.
+  Texto 18 pt, sin cajas.
+- Pie 14 pt #6E6780 debajo de la captura.
+
+Notas del orador:
+[NOTAS]
+Ese flujo puede verse en la interfaz web, construida con Gradio, sobre el paciente sintético P003. El médico selecciona al paciente, revisa su ficha, puede agregar contexto clínico y presiona Analizar paciente. La captura muestra el resultado. La glucemia en ayunas tiene una media de 87,4 miligramos por decilitro, dentro de la meta, y la hemoglobina glucosilada de 6,1 por ciento indica buen control. Sin embargo, el mínimo de la serie es 55, y la herramienta determinística genera una alerta de hipoglucemia moderada, con su fecha, su valor y el umbral vulnerado. El modelo no descubre ese valor: lo recibe calculado y lo interpreta. Así, cada alerta se rastrea hasta la observación que la originó.
+[/NOTAS]
+
+Fuentes:
+- Captura: docs/presentacion/capturas/05-alertas-tendencias.png (app local, 2026-10-24, LLM openai_compat deepseek-flash).
+- Valores de P003 (media 87,4, mínimo 55, HbA1c 6,1, alerta moderada < 70 mg/dL del 2025-08-15):
+  la propia captura, data/sample/P003.csv y docx Resultados y discusión, párrafo 4 y Tabla 2 (edge_03).
+- Umbral de hipoglucemia moderada < 70 mg/dL: tools/threshold_tools.py (DM2_CONTROL_THRESHOLDS), ADR-0011.
+- Flujo de la interfaz: interface/app.py (build_demo), capturas 01 y 02, docx Interfaz, observabilidad y modo de operación.
+- Trazabilidad de cada alerta: docx Resultados y discusión (párrafo de la Figura 3).
+
+
+------------------------------------------------------------------------------------------
+DIAPOSITIVA 8 · Prototipo funcional de extremo a extremo
+------------------------------------------------------------------------------------------
+Título: Prototipo funcional de extremo a extremo
+Idea única: lo que funciona hoy y cómo se verifica, incluida la debilidad observada.
+Orador: Ocampo Franco
+Duración estimada: 0:53
+
+[VISIBLE]
+{punto focal, número} 213
+{rótulo del número} pruebas determinísticas en verde, sin acceso al modelo
+{apoyo} 12 casos cualitativos con LLM real: 3 favorables, 5 límite, 4 adversariales
+{apoyo} 7 casos reportados con el comportamiento esperado
+{apoyo} Modo determinístico sin credenciales
+{apoyo} Debilidad: pertinencia de algunas citas
+[/VISIBLE]
+
+Disposición:
+- Número 213 a la izquierda, 96 pt negrita #0F766E, rótulo debajo en 20 pt.
+- A la derecha, las cuatro líneas de apoyo en 20 pt #2A2438, la última en #6E6780.
+- Misma composición que la diapositiva 5 para dar continuidad visual entre los dos números clave.
+
+Notas del orador:
+[NOTAS]
+Lo que muestra la captura forma parte de un prototipo que hoy funciona de extremo a extremo. La evaluación se organizó por objetivo. Para las herramientas y la coordinación del grafo, un conjunto de 213 pruebas determinísticas corre sin acceso al modelo y conforma el gate de integración continua. Para la calidad del resultado, se construyeron doce casos cualitativos: tres favorables, cinco límite y cuatro adversariales. En los siete casos reportados en el artículo, el sistema emitió las alertas esperadas, declaró datos insuficientes cuando correspondía y no cedió ante una inyección de instrucciones. Además, sin credenciales, el grafo corre completo en modo determinístico. La principal debilidad observada es la pertinencia de algunas citas recuperadas.
+[/NOTAS]
+
+Fuentes:
+- 213 pruebas: uv run pytest -m "not integration and not llm", resultado "213 passed, 5 deselected"
+  (ejecutado el 2026-10-24 en la rama presentacion-jit), coincide con docx Estrategia de evaluación.
+- 12 casos 3/5/4: tests/cases/happy_path.json (3), edge_cases.json (5), adversarial.json (4), y docx Estrategia de evaluación.
+- 7 casos reportados que cumplen: docx Resultados y discusión, Tabla 2 (veredicto "Cumple" en los 7), con deepseek-flash.
+- Modo determinístico: README.md (Funcionalidades, punto 7) y docx Desarrollo > Agentes y herramientas, párrafo 2.
+- Debilidad de las citas: docx Resultados y discusión, párrafo 5 ("la principal debilidad observada está en la pertinencia de las citas").
+
+
+------------------------------------------------------------------------------------------
+DIAPOSITIVA 9 · Próximos pasos hacia el uso clínico
+------------------------------------------------------------------------------------------
+Título: Próximos pasos hacia el uso clínico
+Idea única: qué falta para mejorar el razonamiento y qué exige un uso clínico real.
+Orador: Ocampo Franco
+Duración estimada: 0:53
+
+[VISIBLE]
+{columna izquierda, rótulo} Calidad del sistema
+{columna izquierda} Evaluación automática LLM-as-judge
+Recuperación de guías más precisa
+Enrutamiento con salida estructurada
+Análisis de datos CGM
+{columna derecha, rótulo} Antes del uso clínico
+{columna derecha} Seudonimización de datos (Ley 25.326)
+Validación con profesionales y comité de ética
+[/VISIBLE]
+
+Disposición:
+- Dos columnas sin cajas. La derecha es el punto focal: rótulo 28 pt negrita #0F766E.
+  La izquierda: rótulo 24 pt negrita #2A2438. Ítems 20 pt.
+- La columna izquierda ocupa 60 % del ancho y la derecha 40 %, separadas por una línea vertical #E2E8F0.
+
+Notas del orador:
+[NOTAS]
+Esa debilidad orienta el primer paso del trabajo futuro: mejorar la precisión de la recuperación de guías e incorporar una evaluación automática del tipo LLM-as-judge, que puntúe la fidelidad del reporte frente a los fragmentos recuperados. También se prevé migrar el enrutamiento a salida estructurada del modelo y analizar datos de monitoreo continuo de glucosa. Antes de cualquier uso clínico, los datos de salud son sensibles según la Ley 25.326, por lo que será necesario seudonimizarlos y validar el sistema con profesionales bajo un protocolo aprobado por un comité de ética. En síntesis, separar el cálculo de la interpretación permitió una capa numérica auditable, con un modelo que aporta contexto sin reemplazar el criterio médico.
+[/NOTAS]
+
+Fuentes:
+- LLM-as-judge, precisión de recuperación, enrutamiento estructurado, CGM, seudonimización,
+  validación con profesionales y comité de ética: docx Conclusiones, párrafo 4 (trabajo futuro).
+- Ley 25.326 y datos de salud sensibles: docx Conclusiones, párrafo 3.
+- Enrutamiento pendiente de LLM: orchestrator/router.py (TODO en is_followup_message) y docs/roadmap_mejoras.md, punto 2.
+- LLM-as-judge: docs/roadmap_mejoras.md, punto 5.
+- CGM como extensión futura: orchestrator/state.py (CGMMetrics) y docs/CLAUDE.md, decisión 3.
+- Conclusión oral (última frase): docx Conclusiones, párrafo 1.
+
+
+------------------------------------------------------------------------------------------
+DIAPOSITIVA 10 · CIERRE
+------------------------------------------------------------------------------------------
+Título: sin título de contenido
+Idea única: cierre e invitación a preguntas.
+Orador: Ocampo Franco
+Duración estimada: 0:10
+
+[VISIBLE]
+{placeholder 1 del layout CIERRE, 48 pt negrita #582899, centrado} Gracias
+{placeholder 2 del layout CIERRE, 28 pt #582899, centrado} ¿Preguntas?
+[/VISIBLE]
+
+Disposición:
+- Layout CIERRE con sus elementos fijos (logo JIT centrado arriba, banda UTN Santa Fe, línea tricolor).
+- Imagen de fondo a sangre, detrás de todos los elementos (punto 10). El área central entre
+  y 1,3 y y 5,2 pulgadas debe quedar libre de detalle para el texto y el logo.
+- Sin datos de contacto (consigna del grupo, ver conflicto C2).
+
+Notas del orador: no lleva (la consigna pide notas solo para la portada y las diapositivas de contenido).
+Ocampo Franco agradece e invita a preguntas con una frase libre.
+
+
+==========================================================================================
+7. TABLA DE PROGRESIÓN
+==========================================================================================
+
+| Diap. | Idea nueva que introduce | Idea anterior que retoma | Justificación |
+|---|---|---|---|
+| 1 | Trabajo, marco académico e integrantes | Ninguna | Apertura |
+| 2 | Problema: métricas dispersas y hallazgos que pasan inadvertidos | Ninguna | Primera idea de contenido |
+| 3 | Objetivo (reporte de soporte) y enfoque (separar cálculo de interpretación) | 2: el problema | Se construye sobre él: el enfoque responde a la carga cognitiva y al riesgo de omisión |
+| 4 | Tres agentes, sus fuentes de datos y el estado compartido | 3: la separación | La refuerza: muestra cómo la separación se vuelve estructura (Monitor calcula, Clínico interpreta) |
+| 5 | RAG sobre guías como componente de IA central, con citas ancladas | 4: el Clínico y ChromaDB | Profundiza un nodo del diagrama anterior, sin repetir la arquitectura |
+| 6 | Enrutamiento por reglas y ciclo de refinamiento acotado | 4: los nodos | Agrega la dinámica sobre la estructura ya presentada |
+| 7 | El sistema funcionando sobre un caso real de la app | 2: la hipoglucemia oculta en el promedio | Cierra el gancho de la diapositiva 2 con evidencia de la app: la alerta la calcula la herramienta |
+| 8 | Estado verificable: pruebas, casos y debilidad observada | 7: la captura | Generaliza el caso puntual al conjunto de pruebas y casos |
+| 9 | Trabajo futuro y requisitos para uso clínico | 8: la debilidad de las citas, y 3: la separación | La debilidad motiva el primer paso. La separación se retoma en la frase final como conclusión oral, que exige la rúbrica (criterio 4) |
+| 10 | Cierre | Ninguna | Invitación a preguntas |
+
+
+==========================================================================================
+8. DIAGRAMAS A CONSTRUIR EN LA FASE 2
+==========================================================================================
+
+Reglas para ambos: draw.io, fondo transparente o blanco, Calibri, rótulos 18 pt o más, sin
+íconos, sin cajas dentro de cajas, sin gradientes, sin sombras. Exportar .drawio y .png
+(2x, fondo blanco) a docs/presentacion/diagramas/.
+
+D1 · Arquitectura general (destino: diapositiva 4)
+Archivo sugerido: docs/presentacion/diagramas/d1-arquitectura.drawio y .png
+Propósito: mostrar quién hace qué y con qué fuentes, sin la dinámica del flujo.
+Nodos:
+- N1 "Médico" (actor, texto sin forma o con borde #5B6B7D). Fuente: interface/app.py (usuario de la UI).
+- N2 "Orquestador" con subtítulo "enruta cada mensaje". Agente: relleno #E6F4F1, borde #0F766E.
+  Fuente: orchestrator/graph.py (orchestrator_node).
+- N3 "Monitor" con subtítulo "calcula". Agente. Fuente: agents/monitor.py, nodo monitor.
+- N4 "Clínico" con subtítulo "interpreta". Agente. Fuente: agents/clinical.py, nodo clinical.
+- N5 "EHR y medicación" (fuente de datos: relleno blanco, borde #E2E8F0, texto #5B6B7D).
+  Fuente: tools/patient_tools.py (load_patient_data, get_medication_schedule, data/sample/).
+- N6 "Historial de sesiones (SQLite)" (fuente de datos). Fuente: tools/history_store.py, tools/history_tools.py, data/tp2.db.
+- N7 "Guías clínicas (ChromaDB)" (fuente de datos). Fuente: rag/retriever.py, data/chroma_db/.
+- N8 "Estado compartido de la sesión" (banda horizontal fina debajo de N2, N3 y N4, sin contenerlos).
+  Fuente: orchestrator/state.py (AgentState), MemorySaver en orchestrator/graph.py.
+Relaciones (flechas #5B6B7D, sin rótulo salvo indicación):
+- N1 a N2. Fuente: interface/app.py invoca orchestrator.graph.app.
+- N2 a N3 y N2 a N4. Fuente: route_from_orchestrator (pipeline a monitor, followup a clinical).
+- N3 a N4. Fuente: route_after_monitor (monitor a clinical).
+- N3 a N5, línea punteada (lectura). Fuente: tools/patient_tools.py.
+- N4 a N6, línea punteada (lectura). Fuente: tools/history_tools.py (get_patient_history, compare_with_previous_sessions).
+- N4 a N7, línea punteada (recuperación). Fuente: tools/rag_tools.py, rag/retriever.py.
+- N2, N3 y N4 conectados a N8 con líneas cortas verticales. Fuente: AgentState compartido.
+Disposición sugerida: N1 a la izquierda, fila N2, N3, N4 de izquierda a derecha, fuentes de
+datos debajo de su agente (N5 bajo N3, N6 y N7 bajo N4), banda N8 entre agentes y fuentes.
+No incluir el nodo de guardado (aparece en D2) para no duplicar ideas.
+
+D2 · Flujo de una consulta (destino: diapositiva 6)
+Archivo sugerido: docs/presentacion/diagramas/d2-flujo.drawio y .png
+Propósito: mostrar el enrutamiento y el ciclo de refinamiento.
+Nodos:
+- F1 "Mensaje del médico" (inicio). Fuente: interface/app.py.
+- F2 "Orquestador" (agente). Fuente: orchestrator/graph.py, orchestrator_node.
+- F3 "Monitor" (agente). Fuente: monitor_node.
+- F4 "Clínico" (agente). Fuente: clinical_node.
+- F5 "¿Información suficiente?" (rombo de decisión, borde #0F766E). Fuente: decide_next.
+- F6 "Guardado" (proceso, borde #5B6B7D). Fuente: save_node, update_patient_history, ADR-0008.
+- F7 "Fin" (terminal). Fuente: END en build_graph.
+Relaciones con rótulo:
+- F1 a F2.
+- F2 a F3, rótulo "nuevo análisis". Fuente: arista "pipeline" en route_from_orchestrator.
+- F2 a F4, rótulo "seguimiento". Fuente: arista "followup".
+- F2 a F6, rótulo "confirmar guardado". Fuente: arista "save".
+- F2 a F7, rótulo "cancelar". Fuente: arista "cancel".
+- F3 a F4. Fuente: route_after_monitor ("clinical").
+- F3 a F7, rótulo "sin datos del paciente". Fuente: route_after_monitor ("end"), ADR-0003.
+- F4 a F5.
+- F5 a F3, rótulo "no: vuelve al Monitor (máximo 3 ciclos)", arista #0F766E. Fuente: decide_next
+  (information_sufficient False e iteration < 3).
+- F5 a F7, rótulo "sí: reporte". Fuente: decide_next ("end"). Nota: en seguimiento decide_next
+  termina siempre, no hace falta dibujarlo aparte.
+- F6 a F7. Fuente: graph.add_edge("save", END).
+Disposición sugerida: flujo de izquierda a derecha F1, F2, F3, F4, F5, F7, con F6 debajo de F2
+y el ciclo F5 a F3 dibujado por encima.
+
+
+==========================================================================================
+9. CAPTURAS
+==========================================================================================
+
+Todas en docs/presentacion/capturas/, PNG 1920 x 1080, tema claro, tomadas el 2026-10-24 con
+Playwright y Chromium headless sobre la app local (uv run python main.py), LLM activo
+openai_compat deepseek-flash. Paciente sintético P003. Sin claves, sin datos personales reales,
+sin errores ni avisos de respaldo visibles (se verificó en cada captura de resultado).
+Script reproducible: docs/presentacion/capturas/capturar.py.
+
+| Archivo | Qué muestra | Diapositiva de destino |
+|---|---|---|
+| 01-inicio.png | Pestaña Consulta vacía: barra con "LLM · deepseek-flash", aviso de no diagnóstico, pasos guiados | Reserva (respuesta a preguntas) |
+| 02-paciente-seleccionado.png | P003 seleccionado: ficha (72 años, DM2 desde 2012, hipotiroidismo, 2 sesiones previas, 12 registros, metformina) | Reserva |
+| 03-reporte.png | Indicadores (1 alerta moderada, HbA1c 6.1 %, ayunas 90 mg/dL) y reporte clínico, secciones 1 y 2 | Reserva |
+| 04-reporte-guias.png | Sección "Alertas y respaldo en las guías" con la interpretación y la cita del fragmento recuperado, más tendencias, limitaciones y preguntas sugeridas | Reserva (ilustra la diapositiva 5 si se pregunta por las citas) |
+| 05-alertas-tendencias.png | Tablas Alertas (A1 hipoglucemia moderada, 55 mg/dL, < 70 mg/dL, 2025-08-15) y Tendencias (ayunas media 87.4, mín 55) | 7 (punto focal) |
+| 06-seguimiento.png | Chat de seguimiento: pregunta "¿Qué significa la HbA1c en este paciente?" y respuesta del Clínico | Reserva |
+| 07-observabilidad.png | Pestaña Observabilidad: traza con eventos node_start, routing, llm_start y llm_end con tokens | Reserva |
+
+Las capturas de docs/capturas/ y las figuras del docx son previas al rebranding y no se usan.
+
+
+==========================================================================================
+10. IMAGEN DE CIERRE
+==========================================================================================
+
+Decisión: imagen clara (high-key). Así el texto conserva el color fijo de la plantilla
+(#582899 sobre fondo #F4F0FA, contraste 8,6:1) y el logo JIT del layout CIERRE, que es violeta,
+se sigue leyendo. Una imagen oscura obligaría a cambiar colores fijos de la plantilla.
+
+Prompt propuesto para Qwen Image (en inglés, el modelo responde mejor):
+Flat minimal editorial illustration, 16:9, 1920x1080. Solid very pale lavender background
+#F4F0FA. In the bottom quarter of the frame only, a single thin continuous line chart runs
+from left to right in deep teal #0F766E, with twelve small round markers evenly spaced like
+monthly measurements, all at a similar height except one marker that dips clearly lower.
+Two or three faint horizontal guide lines in light grey #E2E8F0 behind the chart. The upper
+three quarters of the image are completely empty, calm negative space. Quiet, sober,
+clinical, high-key, flat colors, no texture.
+
+Prompt negativo:
+text, letters, numbers, words, watermark, logo, people, faces, hands, doctor, patient,
+robot, brain, neural network, circuit, hologram, glow, neon, futuristic, sci-fi, 3D render,
+gradient, vignette, shadows, medical devices, syringe, pills, dark background.
+
+Criterios de aceptación:
+- Relación directa con el dominio: serie de doce mediciones mensuales con un valor bajo
+  aislado (el caso P003 de la diapositiva 7).
+- Sin personas, sin texto, sin robots ni cerebros, sin estética futurista.
+- Paleta: solo #F4F0FA, #0F766E y #E2E8F0.
+- Zona entre y 1,3 y y 5,2 pulgadas (sobre 7,5) sin detalle, para el logo JIT, "Gracias" y "¿Preguntas?".
+- El gráfico no debe tocar la banda UTN Santa Fe ni la línea tricolor (y > 6,6 pulgadas).
+
+Plan alternativo si no cumple (consigna de la fase 2): captura real de la app desenfocada y
+oscurecida. Usar docs/presentacion/capturas/05-alertas-tendencias.png con desenfoque gaussiano
+fuerte y una capa #0B1118 al 70 %. En ese caso, "Gracias" y "¿Preguntas?" pasan a #FFFFFF
+(contraste 19:1 sobre #0B1118) y debe registrarse en el "Registro de fase 2" que el texto del
+cierre deja el color fijo de la plantilla. La marca violeta del logo JIT pierde contraste
+sobre fondo oscuro: evaluar mantener solo el cuadro JIT (image2.png), que es legible.
+
+
+==========================================================================================
+11. CONFLICTOS ENTRE FUENTES Y RESOLUCIÓN
+==========================================================================================
+
+C1. Rúbrica contra consigna del grupo: conclusión.
+- Rúbrica, criterio 4, nivel máximo: "una conclusión que retoma las ideas principales".
+- Consigna: "No hay diapositiva de resumen ni de conclusiones".
+- Resolución: la conclusión es oral, en la última frase de las notas de la diapositiva 9, y
+  retoma la separación cálculo e interpretación. No se agrega diapositiva.
+
+C2. Plantilla contra consigna del grupo: diapositiva de cierre.
+- Plantilla, layout CIERRE: "Muchas gracias" y "Datos de contacto", sin imagen de fondo.
+- Consigna: solo "Gracias" y "¿Preguntas?" sobre una imagen de fondo.
+- Resolución: los textos de los placeholders son editables y la consigna los define. Se
+  mantienen los elementos fijos del layout (logo JIT, banda UTN Santa Fe, línea tricolor) y el
+  color fijo #582899 del texto. La imagen es clara para no romper esos colores (punto 10).
+
+C3. Plantilla contra narrativa: secciones sugeridas.
+- Plantilla, "Contenido sugerido" (layout GUIA, para eliminar antes de presentar):
+  Introducción, Objetivos, Metodología, Resultados y discusión, Conclusiones.
+- Resolución: es una sugerencia, no una exigencia. Mapeo: Introducción = 2, Objetivos = 3,
+  Metodología o Desarrollo = 4 a 7, Resultados y discusión = 8, Conclusiones = cierre oral en 9.
+  Se conserva la narrativa base del grupo, que cubre las cinco secciones.
+
+C4. Plantilla contra consigna del grupo: logos.
+- Consigna: logos del TP y de UTN FRSF solo en la portada, salvo que la plantilla exija otra cosa.
+- Plantilla: el logo JIT y la banda "UTN SANTA FE" están en todos los layouts.
+- Resolución: la plantilla prevalece. Logo JIT y banda UTN en todas las diapositivas. Logo del
+  TP solo en la portada. docs/utn.png duplicaría la banda fija de la portada, por eso no se
+  agrega (decisión del grupo del 2026-10-24).
+
+C5. Plantilla contra paleta de la app: turquesa.
+- Plantilla accent2 #03D1CC contra app --tp-accent #0F766E.
+- Resolución: #03D1CC queda solo en la línea fija (contraste 1,9:1, ilegible como texto).
+  El acento de contenido es #0F766E, que la plantilla deja libre.
+
+C6. Plantilla contra app: tipografía.
+- Plantilla Calibri contra app Plus Jakarta Sans y JetBrains Mono.
+- Resolución: Calibri en las diapositivas (la plantilla la fija en el tema). Las fuentes de la
+  app aparecen solo dentro de las capturas.
+
+C7. Docx contra repositorio: modelo de lenguaje.
+- Docx: configuración por defecto gpt-oss-120b sobre Groq. Evaluación con deepseek-flash.
+- Repositorio: agents/llm_factory.py (DEFAULT_MODELS) y .env.example (LLM_PROVIDER=groq) confirman
+  el default. Las capturas usan deepseek-flash (openai_compat, ADR-0022), igual que la evaluación del docx.
+- Resolución: sin contradicción. El pie de la diapositiva 7 declara el modelo de la captura.
+
+C8. Documentación interna contra código: enrutamiento.
+- docs/CLAUDE.md (decisión 1) habla de "routing por inferencia de intención".
+- Código: orchestrator/router.py usa reglas sobre el mensaje y el estado (TODO de migrar a LLM).
+  Docx: "reglas determinísticas sobre el estado de la sesión".
+- Resolución: prevalece el código. La diapositiva 6 dice "reglas determinísticas".
+
+C9. Documentación interna contra código: cantidad de casos cualitativos.
+- docs/CLAUDE.md (tabla de estado) dice 9 casos.
+- Código: tests/cases/*.json tiene 12 casos (3, 5 y 4). Docx también dice 12.
+- Resolución: prevalece el código. Se usa 12.
+
+C10. Docx contra repositorio: figuras.
+- Las figuras 2 y 3 del docx y docs/capturas/ son previas al rebranding (commit cb9f151 del 2026-10-21).
+- Resolución: se usan solo las capturas nuevas de docs/presentacion/capturas/.
+
+C11. Nombre del archivo fuente.
+- La consigna nombra docs/JIT_ENTREGA_correcion.docx. El archivo real es
+  docs/JIT_ENTREGA_corrección.docx (con tilde). Se trata del mismo documento.
+
+C12. Carácter en la categoría de la portada.
+- El texto fijo de la plantilla "Trabajos en Desarrollo – Estudiantes de grado" usa un guion
+  medio (en dash, U+2013), no un em dash (U+2014). Se conserva tal cual porque es texto de la
+  plantilla. Si el grupo prefiere evitarlo, reemplazar por "Trabajos en Desarrollo, Estudiantes de grado".
+
+
+==========================================================================================
+12. SUPUESTOS Y DUDAS ABIERTAS
+==========================================================================================
+
+Supuestos
+- S1. Las "palabras visibles" excluyen el título y el texto que aparece dentro de las capturas.
+- S2. El total máximo de 1000 palabras de notas incluye la nota de la portada (total: 974).
+- S3. La diapositiva de cierre no lleva notas escritas.
+- S4. Grafía de los apellidos confirmada por el grupo: Agüero y Gaitán (coincide con el docx).
+- S5. No se prevé demostración en vivo. Durante las capturas, algunas corridas del análisis
+  cayeron al respaldo determinístico porque el modelo devolvió un reporte estructurado inválido
+  (registro de la app: "el LLM no devolvió un reporte estructurado válido"). Esas corridas se
+  descartaron. Es una observación de esta sesión, no una métrica, y no se presenta.
+- S6. La categoría es "Trabajos en Desarrollo – Estudiantes de grado" (consigna: trabajo en
+  desarrollo, estudiantes de grado).
+- S7. El límite de 6 palabras por título rige para las diapositivas de contenido. La portada usa
+  el título exacto del docx (15 palabras).
+- S8. El docx fuente no se commitea: el repositorio es público y el docx incluye los correos de
+  los autores. Esta especificación ya contiene todo lo que la fase 2 necesita de él.
+
+Decisiones del grupo (resueltas el 2026-10-24)
+- Directora del proyecto: Milagros Gutiérrez.
+- No se agrega un logo UTN adicional en la portada. La banda fija "UTN SANTA FE" de la plantilla
+  cumple ese rol. El archivo logo-utn-frsf.png se retiró de docs/presentacion/recursos/.
+- Apellidos: Agüero y Gaitán.
+- Campo PROYECTO de la portada: "UTN Facultad Regional Santa Fe" y
+  "JIT 2026 · 29 de octubre de 2026", aunque la plantilla lo pensó para proyectos de investigación.
+- Herramienta: Claude Slides con una aproximación visual de la plantilla. No hace falta armar la
+  versión final sobre el .pptx oficial. Las diferencias de posición o tamaño de los elementos fijos
+  se anotan en el "Registro de fase 2".
+
+Dudas abiertas
+- Ninguna.
+
+
+==========================================================================================
+13. REGISTRO DE FASE 2
+==========================================================================================
+
+Construcción del 2026-10-24 en claude.ai, rama presentacion-jit. Cada entrada indica la
+decisión y su motivo. El contenido, el orden y la redacción del punto 6 no se modificaron.
+
+Verificación previa
+- R1. El punto 1 concluye que la JIT no exige el archivo oficial tal cual. Por eso se usó
+  Claude Slides sin consultar, como indica la consigna de la fase 2.
+
+Herramienta y tipografía
+- R2. Presentación construida con el tipo Claude Slides (lienzo 1920 x 1080 px, 144 px por
+  pulgada, por lo tanto 1 pt = 2 px). Todas las posiciones del punto 1 y de los layouts se
+  convirtieron con esa escala.
+- R3. Calibri no está disponible en Claude Slides. Se usó Carlito (Google Fonts), métricamente
+  compatible, como prevé el punto 5. Los .drawio declaran Calibri, y las imágenes exportadas
+  se renderizaron con Carlito.
+- R4. El número de diapositiva se dibuja a 12 pt (24 px) y no a 11 pt porque Claude Slides no
+  admite texto menor a 24 px. La diferencia es de 1 pt.
+
+Elementos fijos de la plantilla
+- R5. Las coordenadas de los elementos fijos se tomaron del XML de los layouts del .pptx
+  (no solo del punto 1): línea tricolor en y 998 px (violeta x 72 a 1181, turquesa 1191 a
+  1249, amarillo 1259 a 1446, alto 6 px), banda UTN Santa Fe en x 1605, y 979, 242 x 48 px,
+  logo JIT de contenido en x 1531, y 65, 317 x 100 px, logo JIT de portada en x 72, y 65,
+  545 x 173 px.
+- R6. El logo JIT combinado (marca más cuadro violeta) se armó superponiendo image2.png sobre
+  image1.png de la plantilla, igual que en los layouts. Se guardó como asset de la presentación.
+- R7. Fondo #FFFFFF en todas las diapositivas de contenido, como fija la plantilla, aunque la
+  guía de Claude Slides sugiere blancos tonalizados. Prevalece la plantilla.
+- R8. Logo del TP solo en la portada (x 1675, y 65, 173 x 173 px). Logo JIT y banda UTN en
+  todas las diapositivas porque la plantilla los fija (conflicto C4).
+
+Diagramas
+- R9. draw.io de escritorio no pudo descargarse en el entorno de construcción (el proxy
+  bloqueó la descarga desde GitHub Releases). Los diagramas se definieron como datos en
+  docs/presentacion/diagramas/generar_diagramas.py, que escribe el .drawio editable y, con la
+  misma geometría, el .svg y el .png a 2x. Si se requiere una exportación hecha por draw.io,
+  abrir cada .drawio y usar Archivo > Exportar como > PNG, escala 200 %, fondo blanco.
+- R10. D2 no sigue al pie de la letra la disposición sugerida. El orden de nodos sugerido
+  obliga a un cruce de aristas entre "seguimiento" y el ciclo de refinamiento. Para evitarlo:
+  el ciclo F5 a F3 va por encima (como pide el punto 8), "sin datos del paciente" va por
+  encima del ciclo, "seguimiento" va por debajo de la fila principal y "Fin" queda abajo a la
+  derecha. Resultado: ningún cruce de aristas.
+- R11. En D1 las líneas punteadas de lectura pasan por detrás de la banda "Estado compartido
+  de la sesión" para no cortar su texto. Los conectores cortos al estado salen del extremo
+  izquierdo de cada agente para no superponerse con las líneas de lectura.
+- R12. Tamaños en los diagramas: nombres de agentes 20 pt negrita, resto de rótulos 18 pt,
+  ambos dentro del mínimo del punto 8. Las imágenes se insertan a 1776 x 684 px, el área de
+  contenido completa.
+
+Imagen de cierre
+- R13. Qwen Image, intento 1, con el prompt y el prompt negativo del punto 10 sin cambios:
+  descartado. El modelo dibujó como texto los códigos hexadecimales y "1920x1080", y agregó
+  una gota. Viola "sin texto".
+- R14. Qwen Image, intento 2, con el mismo pedido redactado sin códigos hexadecimales ni
+  medidas: descartado. El gráfico ocupa la zona central (y 1,3 a 5,2 pulgadas), tiene
+  tendencia ascendente en lugar de doce mediciones estables y repite la gota.
+- R15. Ambos intentos se guardaron en docs/presentacion/recursos/qwen-descartadas/. Se aplicó
+  el plan alternativo del punto 10: docs/presentacion/capturas/05-alertas-tendencias.png con
+  desenfoque gaussiano (radio 22 px) y capa #0B1118 al 70 %. Archivo:
+  docs/presentacion/recursos/cierre-fondo.png.
+- R16. Por el plan alternativo, "Gracias" y "¿Preguntas?" pasan de #582899 a #FFFFFF, como
+  prevé el punto 10. Se deja el color fijo de la plantilla.
+- R17. En el cierre se usa solo el cuadro JIT (image2.png), centrado, porque la marca violeta
+  "Jóvenes Investigadores Tecnológicos" pierde contraste sobre fondo oscuro.
+- R18. La imagen de fondo cubre desde y 0 hasta y 950 px (6,6 pulgadas) y no hasta el borde
+  inferior. La franja inferior queda blanca para que la línea tricolor y la banda UTN Santa Fe,
+  cuyo texto es azul sobre transparente, sigan legibles sin modificarlas.
+
+Diapositivas
+- R19. Diapositiva 7: la captura recortada (x 470 a 1890, y 385 a 1065) no se escaló al ancho
+  completo del área de contenido porque a ese ancho mediría 850 px de alto y superaría los
+  684 px disponibles. Se escaló a 1170 x 560 px y las dos anotaciones van a la derecha, con
+  una línea guía corta a la altura de la fila A1 de Alertas y de la fila "Glucosa en ayunas"
+  de Tendencias. Pie a 14 pt.
+- R20. Diapositiva 7: la anotación 1 usa #0F766E (rótulos de anotación, punto 4.2) y la
+  anotación 2 usa #B54708, como indica el punto 6.
+- R21. Diapositiva 2: los siete rótulos de métricas van en una sola fila a 20 pt con 44 px de
+  separación, sin cajas.
+- R22. Diapositivas 5 y 8 comparten composición: número a 96 pt a la izquierda y apoyo a
+  20 pt a la derecha, como pide el punto 6.
+- R23. Diapositiva 9: columnas 60 % y 40 % separadas por una línea vertical #E2E8F0. Los ítems
+  se muestran como líneas de texto sin viñetas, para conservar el texto exacto del punto 6.
+- R24. Diapositiva 10 sin notas del orador (supuesto S3).
+- R25. El texto alternativo de las imágenes describe su contenido para accesibilidad. No es
+  texto visible y no cuenta para el límite de palabras.
+
+Verificación final (script sobre los archivos de las diapositivas, 2026-10-24)
+- R26. Notas del orador idénticas, carácter por carácter, a los bloques [NOTAS] del punto 6.
+  Total: 974 palabras, menor a 1000.
+- R27. Sin em dash (U+2014), sin emojis y sin punto y coma en textos, notas ni textos
+  alternativos. Se corrigió un punto y coma en el texto alternativo de la diapositiva 6. El
+  guion medio de la categoría de portada se conserva (conflicto C12).
+- R28. Palabras visibles por diapositiva de contenido, sin título y contando el número de
+  página: 2: 38, 3: 33, 4: 24 en el diagrama, 5: 30, 6: 29 en el diagrama, 7: 25,
+  8: 38, 9: 36, 10: 2. Todas dentro del máximo de 40. La portada queda exenta (supuesto S7).
+- R29. Logos: logo del TP solo en la portada. Logo JIT y banda UTN en todas por exigencia de
+  la plantilla.
+
+Ajuste de densidad (pedido del grupo, 2026-10-24, después de la primera versión)
+- R30. El grupo pidió más contenido visual y entre 30 % y 40 % más de palabras en las
+  diapositivas 2, 3, 5, 7, 8 y 9. Quedan sin cambios la portada, las diapositivas de
+  diagrama (4 y 6) y el cierre. Las notas del orador no cambian, por lo tanto el total
+  sigue en 974 palabras y la duración estimada no varía.
+- R31. Este pedido deja sin efecto el máximo de 40 palabras visibles de la tarea 4 en esas
+  diapositivas y se aparta de la recomendación de la plantilla ("No coloques mucho texto").
+  Lo decidió el grupo. Para limitar el impacto, la mayor parte del aumento se resolvió con
+  gráficos y el texto nuevo se tomó de las notas del orador y de las fuentes del punto 6,
+  sin datos nuevos.
+- R32. Palabras visibles después del ajuste (sin título, incluye rótulos de gráficos):
+  2: 38 a 57, 3: 33 a 47, 5: 30 a 45, 7: 25 a 40, 8: 38 a 55, 9: 36 a 52.
+- R33. Diapositiva 2: gráfico SVG con la serie real de glucosa en ayunas de P003
+  (data/sample/P003.csv, doce mediciones de 2025), banda de meta 80 a 130 mg/dL (SAD,
+  tools/threshold_tools.py), umbral de hipoglucemia < 70 mg/dL, promedio 87,4 y el valor 55
+  destacado en #B54708. Anticipa visualmente el caso de la diapositiva 7. Métricas como
+  etiquetas con relleno #E6F4F1. Se agregó la viñeta de alta demanda, carga cognitiva y
+  riesgo de omisión (notas de la diapositiva 2).
+- R34. Diapositiva 3: las dos columnas pasan a tarjetas con borde superior #0F766E unidas por
+  una flecha "valores calculados". Viñetas nuevas: estadísticas y tendencias, alertas por
+  metas (punto 2, ítem 3), usa valores ya calculados y nunca calcula (notas).
+- R35. Diapositiva 5: barra apilada con la composición del corpus (1863 Guía Nacional 2019,
+  577 SAD 2025, 1144 ADA 2024, conteo del punto 6) en lugar de la línea de fuentes, más un
+  recorrido Guías, ChromaDB, Clínico, Reporte. Viñetas nuevas: embeddings locales
+  multilingües y el motivo de no usar RAG sobre el historial (notas).
+- R36. Diapositiva 7: tira de tres pasos de la interfaz (notas), captura reducida a
+  1060 x 508 px, tercera anotación HbA1c 6,1 % (notas) y la línea "Cada alerta es trazable
+  hasta su observación" (idea única de la diapositiva).
+- R37. Diapositiva 8: los doce casos como cuadrícula de 3, 5 y 4 casillas, y las tres
+  conductas verificadas en los siete casos reportados como lista con marcas (notas). Se
+  agregó "gate de integración continua" (notas).
+- R38. Diapositiva 9: ítems numerados con una línea descriptiva cada uno (notas y fuentes del
+  punto 6). La columna "Antes del uso clínico" pasa a tarjeta para mantenerla como punto focal.
+- R39. Se eliminaron los bordes de acento de un solo lado (border-top en las tarjetas de las
+  diapositivas 3 y 9, border-left en "Modo determinístico" de la diapositiva 8). Pedido del
+  grupo: es un recurso genérico que no aporta información. Las tarjetas de la diapositiva 3
+  conservan solo el relleno suave.
+- R40. Diapositiva 9 reorganizada en dos bloques con encabezados alineados y una línea fina
+  #E2E8F0 debajo de cada uno. "Calidad del sistema" en cuadrícula de 2 x 2 (ítems 1 a 4) y
+  "Antes del uso clínico" con los ítems 5 y 6 en las mismas filas, unidos por un signo de
+  avance. La numeración continua expresa el orden: primero la calidad del sistema, después
+  los requisitos para el uso clínico. Los números 5 y 6 van sobre círculo #0F766E y el
+  encabezado en #0F766E para mantener ese bloque como punto focal. Se quitó la tarjeta.
+- R41. Diapositiva 5: la viñeta "Motivo: evitar pasajes contradictorios" pasa a "Así no se
+  recuperan datos sueltos que se contradigan", a pedido del grupo, para que se entienda sin
+  vocabulario técnico. Mantiene el sentido de las notas (fragmentar el historial podría
+  recuperar pasajes contradictorios).
+- R42. Reemplaza a R41. El grupo editó la diapositiva 5: la cuarta viñeta se eliminó y la
+  tercera queda "El historial se consulta por identificador, sin RAG. Así se lee completo y
+  en orden." Se quitó la repetición de "historial".
