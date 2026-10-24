@@ -818,3 +818,105 @@ Decisiones del grupo (resueltas el 2026-10-24)
 
 Dudas abiertas
 - Ninguna.
+
+
+==========================================================================================
+13. REGISTRO DE FASE 2
+==========================================================================================
+
+Construcción del 2026-10-24 en claude.ai, rama presentacion-jit. Cada entrada indica la
+decisión y su motivo. El contenido, el orden y la redacción del punto 6 no se modificaron.
+
+Verificación previa
+- R1. El punto 1 concluye que la JIT no exige el archivo oficial tal cual. Por eso se usó
+  Claude Slides sin consultar, como indica la consigna de la fase 2.
+
+Herramienta y tipografía
+- R2. Presentación construida con el tipo Claude Slides (lienzo 1920 x 1080 px, 144 px por
+  pulgada, por lo tanto 1 pt = 2 px). Todas las posiciones del punto 1 y de los layouts se
+  convirtieron con esa escala.
+- R3. Calibri no está disponible en Claude Slides. Se usó Carlito (Google Fonts), métricamente
+  compatible, como prevé el punto 5. Los .drawio declaran Calibri, y las imágenes exportadas
+  se renderizaron con Carlito.
+- R4. El número de diapositiva se dibuja a 12 pt (24 px) y no a 11 pt porque Claude Slides no
+  admite texto menor a 24 px. La diferencia es de 1 pt.
+
+Elementos fijos de la plantilla
+- R5. Las coordenadas de los elementos fijos se tomaron del XML de los layouts del .pptx
+  (no solo del punto 1): línea tricolor en y 998 px (violeta x 72 a 1181, turquesa 1191 a
+  1249, amarillo 1259 a 1446, alto 6 px), banda UTN Santa Fe en x 1605, y 979, 242 x 48 px,
+  logo JIT de contenido en x 1531, y 65, 317 x 100 px, logo JIT de portada en x 72, y 65,
+  545 x 173 px.
+- R6. El logo JIT combinado (marca más cuadro violeta) se armó superponiendo image2.png sobre
+  image1.png de la plantilla, igual que en los layouts. Se guardó como asset de la presentación.
+- R7. Fondo #FFFFFF en todas las diapositivas de contenido, como fija la plantilla, aunque la
+  guía de Claude Slides sugiere blancos tonalizados. Prevalece la plantilla.
+- R8. Logo del TP solo en la portada (x 1675, y 65, 173 x 173 px). Logo JIT y banda UTN en
+  todas las diapositivas porque la plantilla los fija (conflicto C4).
+
+Diagramas
+- R9. draw.io de escritorio no pudo descargarse en el entorno de construcción (el proxy
+  bloqueó la descarga desde GitHub Releases). Los diagramas se definieron como datos en
+  docs/presentacion/diagramas/generar_diagramas.py, que escribe el .drawio editable y, con la
+  misma geometría, el .svg y el .png a 2x. Si se requiere una exportación hecha por draw.io,
+  abrir cada .drawio y usar Archivo > Exportar como > PNG, escala 200 %, fondo blanco.
+- R10. D2 no sigue al pie de la letra la disposición sugerida. El orden de nodos sugerido
+  obliga a un cruce de aristas entre "seguimiento" y el ciclo de refinamiento. Para evitarlo:
+  el ciclo F5 a F3 va por encima (como pide el punto 8), "sin datos del paciente" va por
+  encima del ciclo, "seguimiento" va por debajo de la fila principal y "Fin" queda abajo a la
+  derecha. Resultado: ningún cruce de aristas.
+- R11. En D1 las líneas punteadas de lectura pasan por detrás de la banda "Estado compartido
+  de la sesión" para no cortar su texto. Los conectores cortos al estado salen del extremo
+  izquierdo de cada agente para no superponerse con las líneas de lectura.
+- R12. Tamaños en los diagramas: nombres de agentes 20 pt negrita, resto de rótulos 18 pt,
+  ambos dentro del mínimo del punto 8. Las imágenes se insertan a 1776 x 684 px, el área de
+  contenido completa.
+
+Imagen de cierre
+- R13. Qwen Image, intento 1, con el prompt y el prompt negativo del punto 10 sin cambios:
+  descartado. El modelo dibujó como texto los códigos hexadecimales y "1920x1080", y agregó
+  una gota. Viola "sin texto".
+- R14. Qwen Image, intento 2, con el mismo pedido redactado sin códigos hexadecimales ni
+  medidas: descartado. El gráfico ocupa la zona central (y 1,3 a 5,2 pulgadas), tiene
+  tendencia ascendente en lugar de doce mediciones estables y repite la gota.
+- R15. Ambos intentos se guardaron en docs/presentacion/recursos/qwen-descartadas/. Se aplicó
+  el plan alternativo del punto 10: docs/presentacion/capturas/05-alertas-tendencias.png con
+  desenfoque gaussiano (radio 22 px) y capa #0B1118 al 70 %. Archivo:
+  docs/presentacion/recursos/cierre-fondo.png.
+- R16. Por el plan alternativo, "Gracias" y "¿Preguntas?" pasan de #582899 a #FFFFFF, como
+  prevé el punto 10. Se deja el color fijo de la plantilla.
+- R17. En el cierre se usa solo el cuadro JIT (image2.png), centrado, porque la marca violeta
+  "Jóvenes Investigadores Tecnológicos" pierde contraste sobre fondo oscuro.
+- R18. La imagen de fondo cubre desde y 0 hasta y 950 px (6,6 pulgadas) y no hasta el borde
+  inferior. La franja inferior queda blanca para que la línea tricolor y la banda UTN Santa Fe,
+  cuyo texto es azul sobre transparente, sigan legibles sin modificarlas.
+
+Diapositivas
+- R19. Diapositiva 7: la captura recortada (x 470 a 1890, y 385 a 1065) no se escaló al ancho
+  completo del área de contenido porque a ese ancho mediría 850 px de alto y superaría los
+  684 px disponibles. Se escaló a 1170 x 560 px y las dos anotaciones van a la derecha, con
+  una línea guía corta a la altura de la fila A1 de Alertas y de la fila "Glucosa en ayunas"
+  de Tendencias. Pie a 14 pt.
+- R20. Diapositiva 7: la anotación 1 usa #0F766E (rótulos de anotación, punto 4.2) y la
+  anotación 2 usa #B54708, como indica el punto 6.
+- R21. Diapositiva 2: los siete rótulos de métricas van en una sola fila a 20 pt con 44 px de
+  separación, sin cajas.
+- R22. Diapositivas 5 y 8 comparten composición: número a 96 pt a la izquierda y apoyo a
+  20 pt a la derecha, como pide el punto 6.
+- R23. Diapositiva 9: columnas 60 % y 40 % separadas por una línea vertical #E2E8F0. Los ítems
+  se muestran como líneas de texto sin viñetas, para conservar el texto exacto del punto 6.
+- R24. Diapositiva 10 sin notas del orador (supuesto S3).
+- R25. El texto alternativo de las imágenes describe su contenido para accesibilidad. No es
+  texto visible y no cuenta para el límite de palabras.
+
+Verificación final (script sobre los archivos de las diapositivas, 2026-10-24)
+- R26. Notas del orador idénticas, carácter por carácter, a los bloques [NOTAS] del punto 6.
+  Total: 974 palabras, menor a 1000.
+- R27. Sin em dash (U+2014), sin emojis y sin punto y coma en textos, notas ni textos
+  alternativos. Se corrigió un punto y coma en el texto alternativo de la diapositiva 6. El
+  guion medio de la categoría de portada se conserva (conflicto C12).
+- R28. Palabras visibles por diapositiva de contenido, sin título y contando el número de
+  página: 2: 38, 3: 33, 4: 24 en el diagrama, 5: 30, 6: 29 en el diagrama, 7: 25,
+  8: 38, 9: 36, 10: 2. Todas dentro del máximo de 40. La portada queda exenta (supuesto S7).
+- R29. Logos: logo del TP solo en la portada. Logo JIT y banda UTN en todas por exigencia de
+  la plantilla.
