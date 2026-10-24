@@ -977,3 +977,10 @@ Ajuste de densidad (pedido del grupo, 2026-10-24, después de la primera versió
   "sin datos del paciente" y su rótulo bajan 22 px para dejar margen con el borde superior.
   PNG, SVG y .drawio regenerados con generar_diagramas.py (renderizado con Carlito). En la
   presentación de claude.ai se reemplazaron las imágenes de las diapositivas 4 y 6.
+- R44. Cierre rediseñado (2026-10-24, pedido del grupo: el fondo oscuro desenfocado resultaba
+  muy oscuro y disruptivo). Reemplaza a R15 a R18 en la diapositiva 10. Fondo blanco como el
+  resto. A la izquierda, logo JIT completo, "Gracias" (96 px, #582899) y "¿Preguntas?" (56 px,
+  #6E6780), que vuelven a los colores fijos de la plantilla. A la derecha, la captura en tema
+  claro docs/presentacion/capturas/03-reporte.png, nítida y enmarcada con borde #E2E8F0, para
+  que la app se reconozca. Se descartó un fondo claro desenfocado a sangre porque el texto del
+  reporte competía con "Gracias". recursos/cierre-fondo.png queda en el repositorio sin uso.
