@@ -971,3 +971,9 @@ Ajuste de densidad (pedido del grupo, 2026-10-24, después de la primera versió
 - R42. Reemplaza a R41. El grupo editó la diapositiva 5: la cuarta viñeta se eliminó y la
   tercera queda "El historial se consulta por identificador, sin RAG. Así se lee completo y
   en orden." Se quitó la repetición de "historial".
+- R43. Ajuste de diagramas (2026-10-24, pedido del grupo después de la revisión). D1: las tres
+  flechas punteadas de lectura ahora van de la fuente de datos al agente que la lee (EHR a
+  Monitor, Historial y Guías a Clínico), para que no se lean como escritura. D2: la arista
+  "sin datos del paciente" y su rótulo bajan 22 px para dejar margen con el borde superior.
+  PNG, SVG y .drawio regenerados con generar_diagramas.py (renderizado con Carlito). En la
+  presentación de claude.ai se reemplazaron las imágenes de las diapositivas 4 y 6.
