@@ -207,7 +207,7 @@ Contenido visible (por placeholder del layout PORTADA):
 [VISIBLE]
 {categoría, placeholder 1, 18 pt negrita #6E6780} Trabajos en Desarrollo – Estudiantes de grado
 {título, placeholder 2, 40 pt negrita #582899} Sistema multi-agente de asistencia al médico en el control de pacientes con diabetes tipo 2
-{rótulo fijo PROYECTO, placeholder 3, línea 1 negrita} Inteligencia Artificial · UTN Facultad Regional Santa Fe
+{rótulo fijo PROYECTO, placeholder 3, línea 1 negrita} UTN Facultad Regional Santa Fe
 {placeholder 3, línea 2} JIT 2026 · 29 de octubre de 2026
 {rótulo fijo DIRECTOR/A DEL PROYECTO, placeholder 4} Milagros Gutiérrez
 {rótulo fijo AUTOR/ES, placeholder 5, un nombre por línea} Agüero, Gonzalo
@@ -233,7 +233,8 @@ Se presenta un trabajo en desarrollo de la cátedra Inteligencia Artificial de l
 Fuentes:
 - Título: docx, primer párrafo.
 - Categoría: plantilla, diapositiva 1 (portada "Trabajos en Desarrollo – Estudiantes de grado").
-- Materia, facultad, evento, fecha e integrantes: consigna del grupo. Afiliación UTN FRSF: docx, datos de autores.
+- Facultad, evento, fecha e integrantes: consigna del grupo. Afiliación UTN FRSF: docx, datos de autores.
+- La materia (Inteligencia Artificial) no se muestra en la portada por decisión del grupo. Se nombra en la nota del orador.
 
 
 ------------------------------------------------------------------------------------------
@@ -809,7 +810,7 @@ Decisiones del grupo (resueltas el 2026-10-24)
 - No se agrega un logo UTN adicional en la portada. La banda fija "UTN SANTA FE" de la plantilla
   cumple ese rol. El archivo logo-utn-frsf.png se retiró de docs/presentacion/recursos/.
 - Apellidos: Agüero y Gaitán.
-- Campo PROYECTO de la portada: "Inteligencia Artificial · UTN Facultad Regional Santa Fe" y
+- Campo PROYECTO de la portada: "UTN Facultad Regional Santa Fe" y
   "JIT 2026 · 29 de octubre de 2026", aunque la plantilla lo pensó para proyectos de investigación.
 - Herramienta: Claude Slides con una aproximación visual de la plantilla. No hace falta armar la
   versión final sobre el .pptx oficial. Las diferencias de posición o tamaño de los elementos fijos
