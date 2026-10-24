@@ -968,3 +968,6 @@ Ajuste de densidad (pedido del grupo, 2026-10-24, después de la primera versió
   recuperan datos sueltos que se contradigan", a pedido del grupo, para que se entienda sin
   vocabulario técnico. Mantiene el sentido de las notas (fragmentar el historial podría
   recuperar pasajes contradictorios).
+- R42. Reemplaza a R41. El grupo editó la diapositiva 5: la cuarta viñeta se eliminó y la
+  tercera queda "El historial se consulta por identificador, sin RAG. Así se lee completo y
+  en orden." Se quitó la repetición de "historial".
