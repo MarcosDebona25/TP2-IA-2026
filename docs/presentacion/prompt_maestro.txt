@@ -954,3 +954,13 @@ Ajuste de densidad (pedido del grupo, 2026-10-24, después de la primera versió
   agregó "gate de integración continua" (notas).
 - R38. Diapositiva 9: ítems numerados con una línea descriptiva cada uno (notas y fuentes del
   punto 6). La columna "Antes del uso clínico" pasa a tarjeta para mantenerla como punto focal.
+- R39. Se eliminaron los bordes de acento de un solo lado (border-top en las tarjetas de las
+  diapositivas 3 y 9, border-left en "Modo determinístico" de la diapositiva 8). Pedido del
+  grupo: es un recurso genérico que no aporta información. Las tarjetas de la diapositiva 3
+  conservan solo el relleno suave.
+- R40. Diapositiva 9 reorganizada en dos bloques con encabezados alineados y una línea fina
+  #E2E8F0 debajo de cada uno. "Calidad del sistema" en cuadrícula de 2 x 2 (ítems 1 a 4) y
+  "Antes del uso clínico" con los ítems 5 y 6 en las mismas filas, unidos por un signo de
+  avance. La numeración continua expresa el orden: primero la calidad del sistema, después
+  los requisitos para el uso clínico. Los números 5 y 6 van sobre círculo #0F766E y el
+  encabezado en #0F766E para mantener ese bloque como punto focal. Se quitó la tarjeta.
