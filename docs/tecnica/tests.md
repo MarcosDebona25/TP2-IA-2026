@@ -16,10 +16,10 @@ infraestructura ni LLM cuando no se cuenta con ellos.
 
 | Archivo | Objetivo | Determinismo | Cómo correr |
 |---|---|---|---|
-| [`tests/test_monitor_tools.py`](../tests/test_monitor_tools.py) | Tools del Monitor (stats, umbrales ADA) | Determinístico, sin infra | siempre |
-| [`tests/test_clinico_tools.py`](../tests/test_clinico_tools.py) | Tools del Clínico (MongoDB, RAG) | Integración (`integration`) | con infra |
-| [`tests/test_graph.py`](../tests/test_graph.py) | Plomería: grafo, nodos, comunicación, guardrail | Determinístico (default) **+** estocástico (`llm`) | gate siempre; `llm` con API key |
-| [`tests/eval_runner.py`](../tests/eval_runner.py) | **Calidad del output final de la IA** | Cualitativo, manual | `uv run python tests/eval_runner.py` |
+| [`tests/test_monitor_tools.py`](../../tests/test_monitor_tools.py) | Tools del Monitor (stats, umbrales ADA) | Determinístico, sin infra | siempre |
+| [`tests/test_clinico_tools.py`](../../tests/test_clinico_tools.py) | Tools del Clínico (MongoDB, RAG) | Integración (`integration`) | con infra |
+| [`tests/test_graph.py`](../../tests/test_graph.py) | Plomería: grafo, nodos, comunicación, guardrail | Determinístico (default) **+** estocástico (`llm`) | gate siempre; `llm` con API key |
+| [`tests/eval_runner.py`](../../tests/eval_runner.py) | **Calidad del output final de la IA** | Cualitativo, manual | `uv run python tests/eval_runner.py` |
 
 ### 1. Tools — `test_monitor_tools.py` y `test_clinico_tools.py`
 Verifican **determinísticamente** que las funciones que usan los agentes calculan lo correcto
@@ -40,7 +40,7 @@ final del flujo agéntico**, y eso es **cualitativo**: no se puede afirmar `asse
 redacción de un LLM. Por eso:
 - **No** testea tools, funciones ni pasos intermedios — solo el output final.
 - **No** es un test de pytest (no tiene sentido un pass/fail sobre calidad subjetiva). Es un
-  **script** que corre los casos de [`tests/cases/*.json`](../tests/cases/) con LLM real y vuelca
+  **script** que corre los casos de [`tests/cases/*.json`](../../tests/cases/) con LLM real y vuelca
   un artefacto JSON (`logs/eval_report.json`, *esperado vs. obtenido*) que la pestaña
   **Evaluación** de la interfaz Gradio lee para que un humano compare y puntúe.
 - A futuro, ese juicio manual se reemplaza por un **LLM-as-judge**.

@@ -2,7 +2,7 @@
 
 - **Estado:** Aceptado
 - **Fecha:** 2026-09-24
-- **Relacionado:** [plan MVP](../plan_mvp.md) MVP-01 · absorbe F2-08 · decisión de diseño #2 de `docs/CLAUDE.md`
+- **Relacionado:** [plan MVP](../planificacion/plan_mvp.md) MVP-01 · absorbe F2-08 · decisión de diseño #2 de `docs/CLAUDE.md`
 
 ## Contexto
 

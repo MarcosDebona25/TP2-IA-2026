@@ -1,7 +1,7 @@
 """Capturas de la UI para la presentación JIT 2026 (Playwright headless, 1920x1080).
 
 Requiere la app levantada (uv run python main.py) con el LLM activo en .env.
-Uso: uv run --no-project --with playwright python docs/presentacion/capturas/capturar.py docs/presentacion/capturas
+Uso: uv run --no-project --with playwright python docs/publicaciones/jit/presentacion/capturas/capturar.py docs/publicaciones/jit/presentacion/capturas
 Si el Clínico cae al respaldo determinístico, el análisis se repite (hasta 3 intentos).
 """
 import pathlib

@@ -1,6 +1,6 @@
 # main.py
 #
-# Punto de entrada del MVP (docs/plan_mvp.md): prepara lo local que falte y abre la UI.
+# Punto de entrada del MVP (docs/planificacion/plan_mvp.md): prepara lo local que falte y abre la UI.
 #
 #   uv run python main.py              # http://127.0.0.1:7860
 #   uv run python main.py --no-ui      # solo prepara historial + índice (útil en CI)

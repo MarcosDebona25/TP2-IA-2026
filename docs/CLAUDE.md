@@ -22,11 +22,11 @@ soporte a la decisión médica. Tres agentes coordinados sobre LangGraph:
 - **Monitor** — análisis cuantitativo con tools determinísticas (stats, metas de control DM2).
 - **Clínico** — interpreta hallazgos con RAG sobre guías clínicas + historial del paciente.
 
-Documentos fuente: [docs/TP_2 Agente.md](docs/TP_2%20Agente.md) (enunciado) y
-[docs/TP_2.1 Definicion Conceptual.md](docs/TP_2.1%20Definicion%20Conceptual.md) (diseño).
+Documentos fuente: [docs/consigna/TP_2 Agente.md](docs/consigna/TP_2%20Agente.md) (enunciado) y
+[docs/consigna/TP_2.1 Definicion Conceptual.md](docs/consigna/TP_2.1%20Definicion%20Conceptual.md) (diseño).
 La definición conceptual es la fuente de verdad del diseño; mantenerla sincronizada con el
-código. Ver también [docs/logs.md](docs/logs.md) (cómo leer las trazas/observabilidad) y
-[docs/plan_integrante_D.md](docs/plan_integrante_D.md) (plan detallado de interfaz + logging
+código. Ver también [docs/tecnica/logs.md](docs/tecnica/logs.md) (cómo leer las trazas/observabilidad) y
+[docs/planificacion/plan_integrante_D.md](docs/planificacion/plan_integrante_D.md) (plan detallado de interfaz + logging
 + evaluación).
 
 ## Stack y comandos
@@ -72,7 +72,7 @@ uv lock                 # regenerar lockfile tras cambiar dependencias
 - [interface/app.py](interface/app.py) — UI Gradio que invoca `orchestrator.graph.app`
   real con `thread_id` por sesión y callbacks de logging. Layout de dashboard clínico (barra
   lateral + indicadores + reporte junto al chat + alertas agrupadas + tendencias) y pestañas de
-  Observabilidad y Evaluación. Ver [docs/interfaz.md](interfaz.md).
+  Observabilidad y Evaluación. Ver [docs/tecnica/interfaz.md](tecnica/interfaz.md).
 - [interface/theme.py](interface/theme.py) — sistema visual (ADR-0021): tema Gradio, tokens
   `--tp-*` claro/oscuro, CSS, fuentes embebidas (`interface/assets/fonts/`) y selector de tema.
 - [tools/patient_tools.py](tools/patient_tools.py) — tools determinísticas del Monitor sobre
@@ -192,7 +192,7 @@ el LLM razona el *qué* y el *hasta cuándo*; el cálculo es 100% determinístic
 | `agents/monitor.py` | ✅ **Agente Monitor real**: loop ReAct (ChatGroq + 4 tools LangChain), fallback determinístico sin API key, produce `MonitorAnalysis` |
 | `agents/clinical.py` | ✅ **Agente Clínico real**: loop ReAct (ChatGroq + 3 tools LangChain), fallback determinístico sin API key, modos reporte/seguimiento |
 | Tools del Monitor (EHR/umbrales) + `data/sample/` | ✅ `patient_tools.py` y `threshold_tools.py` listos y testeados; envueltas como `@tool` LangChain en `agents/monitor.py`; CSVs P001–P005 creados |
-| Testing (estrategia) | ✅ organizado por objetivo; ver **[docs/tests.md](docs/tests.md)** (tools / plomería / calidad de la IA) |
+| Testing (estrategia) | ✅ organizado por objetivo; ver **[docs/tecnica/tests.md](docs/tecnica/tests.md)** (tools / plomería / calidad de la IA) |
 | `tests/test_graph.py` | ✅ plomería del grafo en 2 modos: determinístico (fallback forzado, gate de CI) + estocástico (`llm`, LLM real, aserciones laxas) |
 | `tests/test_monitor_tools.py` | ✅ tools del Monitor, determinístico sobre `data/sample/*.csv` |
 | `pyproject.toml`, entorno uv | ✅ deps, entorno uv y tests funcionando listos |
@@ -222,7 +222,7 @@ Ver [docs/division_trabajo.md](docs/division_trabajo.md). Resumen:
   eliminados tras integrar B), `agents/clinical.py` (**✅ implementado**, modos reporte y
   seguimiento; conectado a `tools/mongo_tools.py` y `rag/retriever.py` reales).
 - **D — Interfaz + observabilidad + evaluación**: `interface/*.py` (**✅ UI completa**),
-  `tests/test_clinico_tools.py` (✅), evaluación cualitativa `tests/eval_runner.py` + `tests/cases/*.json` (✅; ver [docs/tests.md](docs/tests.md)).
+  `tests/test_clinico_tools.py` (✅), evaluación cualitativa `tests/eval_runner.py` + `tests/cases/*.json` (✅; ver [docs/tecnica/tests.md](docs/tecnica/tests.md)).
 
 Coordinación crítica:
 - **A ↔ C** sincronizados: A integra en el grafo lo que C implementa; cualquier cambio de
@@ -237,7 +237,7 @@ Coordinación crítica:
 
 > **Fuente de verdad de las correcciones pendientes: [docs/plan_correcciones.md](plan_correcciones.md)**
 > (revisión del 2026-09-15, fases F0–F4). Si esta lista lo contradice, manda el plan.
-> **Prioridad actual: [docs/plan_mvp.md](plan_mvp.md)** (qué entra al MVP y en qué orden).
+> **Prioridad actual: [docs/planificacion/plan_mvp.md](planificacion/plan_mvp.md)** (qué entra al MVP y en qué orden).
 
 1. ~~Reemplazar el stub del Monitor por agente real~~ **✅ HECHO**
 2. ~~Implementar `agents/clinical.py` (Agente Clínico real) e integrar en `graph.py`~~ **✅ HECHO**
@@ -245,6 +245,6 @@ Coordinación crítica:
 4. ~~Completar la interfaz Gradio + `interface/components.py`~~ **✅ HECHO** (merge UI).
 5. ~~Agregar el nodo de persistencia~~ **✅ HECHO** (F1-04, ADR-0008): nodo `save` → `update_patient_history`.
 6. Reemplazar la heurística de `router.py` por clasificación vía LLM.
-7. ~~Completar el harness de evaluación de D~~ **✅ HECHO**: evaluación cualitativa con `tests/eval_runner.py` + `tests/cases/*.json` (ver [docs/tests.md](docs/tests.md)).
+7. ~~Completar el harness de evaluación de D~~ **✅ HECHO**: evaluación cualitativa con `tests/eval_runner.py` + `tests/cases/*.json` (ver [docs/tecnica/tests.md](docs/tecnica/tests.md)).
 8. ~~Detección de "datos insuficientes" en el Agente Clínico real~~ **✅ HECHO** (F1-06, ADR-0010): criterio determinístico común (`information_sufficient_for`); la versión estructurada con LLM es F3-02.
 ```

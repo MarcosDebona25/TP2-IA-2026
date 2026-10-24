@@ -2,7 +2,7 @@
 
 > **Contexto:** La 2ª entrega (22/06) ya pasó. La **entrega final es el 29/06** (en 3 días).
 > El backend está completo y el pipeline corre end-to-end con agentes reales. La evaluación
-> (incluida la cualitativa de la IA) ya está armada; ver [docs/tests.md](tests.md).
+> (incluida la cualitativa de la IA) ya está armada; ver [docs/tecnica/tests.md](../tecnica/tests.md).
 
 ---
 
@@ -13,7 +13,7 @@
 | **A** | Orquestador + Monitor agéntico | 🟢 ~90% | Ninguno. Falta solo (opcional) router por LLM y el nodo de persistencia `save`. |
 | **B** | RAG + Datos + MongoDB | 🟢 ~100% | Ninguno. RAG (ingest+retriever), MongoDB (schema+carga, **Docker y local**) y datos sintéticos en `main`. |
 | **C** | Tools Monitor + Clínico | 🟢 ~95% | Ninguno. Agente Clínico real conectado a Mongo+RAG reales. |
-| **D** | Interfaz + Observabilidad + Evaluación | 🟢 ~100% | Ninguno. Evaluación cualitativa + tests por objetivo completos ([docs/tests.md](tests.md)). |
+| **D** | Interfaz + Observabilidad + Evaluación | 🟢 ~100% | Ninguno. Evaluación cualitativa + tests por objetivo completos ([docs/tecnica/tests.md](../tecnica/tests.md)). |
 
 ---
 
@@ -33,7 +33,7 @@ Todo el stack de **Python** lo gestiona **uv** desde `pyproject.toml` (`uv sync`
 
 - **Modo básico** (sin servicios externos): solo `uv`. El grafo cae a fallbacks
   determinísticos y la UI corre sobre el fixture `data/sample/`. Ideal para verificar que
-  arranca. Ver *Inicio rápido* en el [README](../README.md).
+  arranca. Ver *Inicio rápido* en el [README](../../README.md).
 - **Modo completo**: `uv` + Groq + MongoDB + Ollama (embeddings) + ChromaDB indexado.
 
 ### MongoDB: Docker Compose **o** local nativo
@@ -47,10 +47,10 @@ colección `patients`). Hay dos formas de levantarlo, intercambiables (el códig
   uv run python data/load_mongo.py                     # carga P001–P004
   ```
   Persiste en el volumen `tp2-mongo-data` y crea la base + índice vía `docker/mongo-init.js`.
-  Comandos completos en [docker/README.md](../docker/README.md).
+  Comandos completos en [docker/README.md](../../docker/README.md).
 - **Local nativo (sin Docker).** Iniciar el `mongod` de una instalación local en el puerto
   27017 (en Windows, con `--setParameter diagnosticDataCollectionEnabled=false` para evitar
-  crashes). Ver la sección *Modo completo → MongoDB* del [README](../README.md).
+  crashes). Ver la sección *Modo completo → MongoDB* del [README](../../README.md).
 
 > En Windows, `MONGO_URI=mongodb://127.0.0.1:27017` (ya viene en `.env`/`.env.example`)
 > evita demoras por la resolución IPv6 de `localhost`. Si MongoDB no está disponible, las
@@ -77,7 +77,7 @@ colección `patients`). Hay dos formas de levantarlo, intercambiables (el códig
 
 > [!NOTE]
 > **Estado de "Guardar sesión" (botón de la UI).** Al confirmar el guardado, hoy el grafo
-> enruta a la rama `save`, que **termina en `END` sin escribir nada** ([graph.py](../orchestrator/graph.py),
+> enruta a la rama `save`, que **termina en `END` sin escribir nada** ([graph.py](../../orchestrator/graph.py),
 > `route_from_orchestrator` → `"save": END`). Por eso la UI avisa que la persistencia "todavía
 > no está activa".
 >
@@ -87,7 +87,7 @@ colección `patients`). Hay dos formas de levantarlo, intercambiables (el códig
 > - Lo único que falta es **cablear el nodo `save`** en `orchestrator/graph.py` para que llame a
 >   esa tool con el reporte, las alertas y el `metrics_summary` de la sesión, y luego termine.
 >   Eso es **trabajo del Orquestador (Integrante A)**, no de B ni de D. Marcado con `TODO` en el
->   código ([graph.py](../orchestrator/graph.py), en `route_from_orchestrator`).
+>   código ([graph.py](../../orchestrator/graph.py), en `route_from_orchestrator`).
 
 ---
 
@@ -128,8 +128,8 @@ MongoDB + ChromaDB reales levantados.
 | app.py | ✅ Hecho | UI Gradio: **Consulta clínica** (perfil, contexto, análisis, reporte, alertas/tendencias, chat de seguimiento), **Observabilidad (dev)** (visor de log + JSON crudo) y **Evaluación** (comparación esperado vs. obtenido desde `logs/eval_report.json`). |
 | components.py | ✅ Hecho | Funciones puras de render (`severity_badge`, `alerts_table`, `trends_view`, `patient_profile`, `format_report`, `list_patients`, `load_log_entries`, y el visor de evaluación: `load_eval_history`, `eval_history_summary_md`, `eval_run_choices`, `get_eval_run`, `eval_summary_md`, `eval_case_choices`, `eval_case_view`). |
 | test_clinico_tools.py | ✅ Hecho | Tools del Clínico (mongo_tools + RAG), integración (`@pytest.mark.integration`); requieren MongoDB + Ollama + ChromaDB. |
-| test_graph.py / test_monitor_tools.py | ✅ Hecho (A/C) | Plomería del grafo (2 modos) + tools del Monitor. Ver [docs/tests.md](tests.md). |
-| `tests/cases/*.json` + `tests/eval_runner.py` | ✅ Hecho | Evaluación **cualitativa** de la IA (9 casos: 3 happy / 3 edge / 3 adversarial). Script (no pytest) → `logs/eval_report.json`, comparable desde la pestaña **Evaluación** de la UI. Ver [docs/tests.md](tests.md). |
+| test_graph.py / test_monitor_tools.py | ✅ Hecho (A/C) | Plomería del grafo (2 modos) + tools del Monitor. Ver [docs/tecnica/tests.md](../tecnica/tests.md). |
+| `tests/cases/*.json` + `tests/eval_runner.py` | ✅ Hecho | Evaluación **cualitativa** de la IA (9 casos: 3 happy / 3 edge / 3 adversarial). Script (no pytest) → `logs/eval_report.json`, comparable desde la pestaña **Evaluación** de la UI. Ver [docs/tecnica/tests.md](../tecnica/tests.md). |
 
 **Lo que falta de D:** nada bloqueante. La evaluación quedó completa.
 
@@ -137,7 +137,7 @@ MongoDB + ChromaDB reales levantados.
 > **Decisión de testing:** los tests se organizan **por objetivo** (tools / plomería del grafo /
 > calidad de la IA), no por taxonomía unit-vs-integración. La evaluación de los ejes
 > happy/edge/adversarial es **cualitativa y manual** (`eval_runner.py`), no un test de pytest.
-> Detalle y fundamentos en **[docs/tests.md](tests.md)**.
+> Detalle y fundamentos en **[docs/tecnica/tests.md](../tecnica/tests.md)**.
 >
 > **Brecha A/C (no de tests):** el Agente Clínico real considera 1 fila (P004) como información
 > suficiente, así que el loop de refinamiento solo se dispara en el fallback. El gate de

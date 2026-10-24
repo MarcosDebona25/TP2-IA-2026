@@ -14,7 +14,7 @@ modo que cuando A/B/C entreguen agentes y tools reales, D solo "encienda" lo que
 Decisión ya tomada: **se usa Gradio, no Streamlit** (la def. conceptual permite ambos; el
 equipo eligió Gradio y `interface/app.py` ya tiene un esqueleto Gradio que conecta al grafo real).
 
-> **Nota de ubicación:** este plan se replica como **`docs/plan_integrante_D.md`** en el repo
+> **Nota de ubicación:** este plan se replica como **`docs/planificacion/plan_integrante_D.md`** en el repo
 > (primer paso de ejecución), para tenerlo versionado y compartirlo con el equipo.
 
 ---
@@ -125,7 +125,7 @@ reporte (stub), chat follow-up y guardar funcionan contra el grafo real con stub
 > casos + validación de tools + routing. La implementación final separó esas
 > responsabilidades por objetivo (tools / plomería / calidad de la IA) y la evaluación de los
 > casos pasó a ser **cualitativa y manual** (`tests/eval_runner.py`), no determinística. La
-> fuente de verdad actual es **[docs/tests.md](tests.md)**; lo de abajo queda como registro histórico.
+> fuente de verdad actual es **[docs/tecnica/tests.md](../tecnica/tests.md)**; lo de abajo queda como registro histórico.
 
 Requisito: 5–15 casos (happy path / límite / adversariales) + validación **determinística** de tools.
 
@@ -195,5 +195,5 @@ funcionando" para el coloquio.
 - `interface/components.py` — helpers puros de render (badge, tabla, tendencias, perfil, reporte).
 - `tests/test_tools.py` — runner + tests deterministas (tools con `importorskip`) + routing.
 - `tests/cases/{happy_path,edge_cases,adversarial}.json` — 10 casos con el schema acordado.
-- `docs/plan_integrante_D.md` — copia versionada de este plan (primer paso).
+- `docs/planificacion/plan_integrante_D.md` — copia versionada de este plan (primer paso).
 - `.env.example` — (opcional, coordinar) consolidar vars `LANGSMITH_*`.

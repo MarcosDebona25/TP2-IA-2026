@@ -1,6 +1,6 @@
 # tests/test_smoke_mvp.py
 #
-# Smoke test del MVP (docs/plan_mvp.md → MVP-05): el recorrido del médico en la UI, de punta a
+# Smoke test del MVP (docs/planificacion/plan_mvp.md → MVP-05): el recorrido del médico en la UI, de punta a
 # punta, usando los MISMOS callbacks que la interfaz Gradio (interface/app.py) sobre el grafo
 # real en modo determinístico y un historial SQLite temporal (conftest.py).
 #

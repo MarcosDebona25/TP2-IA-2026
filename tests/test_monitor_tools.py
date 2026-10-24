@@ -1,7 +1,7 @@
 # tests/test_monitor_tools.py
 #
 # Tests determinísticos de las tools del Monitor sobre el fixture data/sample/. Ver
-# docs/tests.md (qué cubre cada archivo y por qué).
+# docs/tecnica/tests.md (qué cubre cada archivo y por qué).
 #
 # Estructura (contrato A+C, ver "Flujo de métricas" en docs/CLAUDE.md):
 #   - Núcleos puros (_compute_stats, _detect_violations) → se testean con listas literales.

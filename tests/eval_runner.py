@@ -1,6 +1,6 @@
 # tests/eval_runner.py
 #
-# Evaluación CUALITATIVA del sistema de agentes (ver docs/tests.md). NO es un test de
+# Evaluación CUALITATIVA del sistema de agentes (ver docs/tecnica/tests.md). NO es un test de
 # pytest: corre los casos de tests/cases/*.json contra el grafo con LLM real y vuelca un
 # artefacto JSON (esperado vs. obtenido) que la pestaña "Evaluación" de la interfaz Gradio
 # lee para mostrar una comparación clara. El día de mañana, el juicio manual del desarrollador

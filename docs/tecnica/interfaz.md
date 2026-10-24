@@ -1,7 +1,7 @@
 # Interfaz de usuario (Gradio)
 
 Interfaz web del sistema, construida con **Gradio**. Conecta al grafo real
-([orchestrator/graph.py](../orchestrator/graph.py)); con `GROQ_API_KEY` usa los agentes ReAct,
+([orchestrator/graph.py](../../orchestrator/graph.py)); con `GROQ_API_KEY` usa los agentes ReAct,
 y sin ella cae a los fallbacks determinísticos.
 
 ## Levantarla
@@ -14,12 +14,12 @@ uv run python -m interface.app   # http://127.0.0.1:7860
 
 | Archivo | Rol |
 |---|---|
-| [interface/app.py](../interface/app.py) | Layout, pestañas y wiring de eventos. Invoca el grafo. |
-| [interface/components.py](../interface/components.py) | Funciones **puras** de render (HTML/Markdown). Sin Gradio → testeables. |
-| [interface/theme.py](../interface/theme.py) | Sistema visual: tema Gradio, tokens claro/oscuro, CSS, fuentes embebidas y selector de tema ([ADR-0021](adr/0021-sistema-visual-de-la-interfaz.md)). |
-| [interface/assets/fonts/](../interface/assets/fonts/) | Plus Jakarta Sans y JetBrains Mono (OFL), embebidas → la UI funciona sin internet. |
-| [interface/assets/logo.svg](../interface/assets/logo.svg) | Logo (monograma «MC» con línea de tendencia). Se usa como favicon; la barra superior usa el mismo glifo inline (`theme._ICON_LOGO`) en `currentColor` para que siga al selector de tema. |
-| [interface/logging_config.py](../interface/logging_config.py) | Observabilidad (ver [docs/logs.md](logs.md)). |
+| [interface/app.py](../../interface/app.py) | Layout, pestañas y wiring de eventos. Invoca el grafo. |
+| [interface/components.py](../../interface/components.py) | Funciones **puras** de render (HTML/Markdown). Sin Gradio → testeables. |
+| [interface/theme.py](../../interface/theme.py) | Sistema visual: tema Gradio, tokens claro/oscuro, CSS, fuentes embebidas y selector de tema ([ADR-0021](../adr/0021-sistema-visual-de-la-interfaz.md)). |
+| [interface/assets/fonts/](../../interface/assets/fonts/) | Plus Jakarta Sans y JetBrains Mono (OFL), embebidas → la UI funciona sin internet. |
+| [interface/assets/logo.svg](../../interface/assets/logo.svg) | Logo (monograma «MC» con línea de tendencia). Se usa como favicon; la barra superior usa el mismo glifo inline (`theme._ICON_LOGO`) en `currentColor` para que siga al selector de tema. |
+| [interface/logging_config.py](../../interface/logging_config.py) | Observabilidad (ver [docs/tecnica/logs.md](logs.md)). |
 
 ## Sistema visual
 
@@ -54,7 +54,7 @@ Sigue el flujo de la def. conceptual (§2.4). Barra lateral a la izquierda, áre
 6. **Guardar sesión**: envía la señal explícita `save_requested=True`. El nodo `save` del grafo
    persiste reporte, alertas y últimos valores de cada métrica en el historial, y el chat muestra el
    resultado real: el id de la sesión o el error. En el chat también sirven "confirmar" o
-   "guardar sesión"; "sí" no guarda ([ADR-0008](adr/0008-guardado-explicito-de-sesion.md)).
+   "guardar sesión"; "sí" no guarda ([ADR-0008](../adr/0008-guardado-explicito-de-sesion.md)).
 
 ## Pestaña 2 — Observabilidad
 
@@ -65,10 +65,10 @@ Visor del log estructurado (`logs/agent.jsonl`) para desarrollo, sin salir de la
 - Botón **Refrescar** (el log se llena al usar la pestaña de consulta).
 - **JSON crudo** de la traza seleccionada al hacer clic en una fila.
 
-Detalle de los campos y eventos del log: [docs/logs.md](logs.md).
+Detalle de los campos y eventos del log: [docs/tecnica/logs.md](logs.md).
 
 ## Datos de muestra
 
-La UI y las tools del Monitor corren sobre el fixture [data/sample/](../data/sample/) (4 perfiles
+La UI y las tools del Monitor corren sobre el fixture [data/sample/](../../data/sample/) (4 perfiles
 `P001`–`P004`, ver su README). Es provisional: lo reemplaza el generador real de B al mismo schema
 (contrato #1). El selector y el perfil degradan con elegancia si un paciente no tiene CSV.

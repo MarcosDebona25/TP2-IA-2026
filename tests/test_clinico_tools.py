@@ -1,6 +1,6 @@
 # tests/test_clinico_tools.py
 #
-# Tests de las tools del Agente Clínico (historial + RAG). Ver docs/tests.md.
+# Tests de las tools del Agente Clínico (historial + RAG). Ver docs/tecnica/tests.md.
 #
 # - Historial: determinísticos, sobre un SQLite temporal cargado con data/sample/
 #   (fixture `seeded_store` de conftest.py). No requieren infraestructura.

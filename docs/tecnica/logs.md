@@ -3,7 +3,7 @@
 Cómo leer las trazas que genera el sistema. Hay **dos formatos del mismo evento**:
 la **consola** (legible, en vivo) y el archivo **`logs/agent.jsonl`** (estructurado, para análisis).
 
-Configuración en [interface/logging_config.py](../interface/logging_config.py).
+Configuración en [interface/logging_config.py](../../interface/logging_config.py).
 
 ---
 

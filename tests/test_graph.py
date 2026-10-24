@@ -1,7 +1,7 @@
 # tests/test_graph.py
 #
 # Plomería del grafo: routing, comunicación entre nodos y guardrail del loop.
-# Dos modos (ver docs/tests.md):
+# Dos modos (ver docs/tecnica/tests.md):
 #   - DETERMINÍSTICO (default): el fixture autouse fuerza el fallback sin LLM →
 #     rápido y reproducible. Es el gate de CI.
 #   - ESTOCÁSTICO (marcador `llm`): invoca el LLM real con aserciones laxas/

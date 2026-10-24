@@ -2,9 +2,9 @@
 
 | | |
 |---|---|
-| **Documento original** | `JIT ENTREGA.docx` (sin modificar, 9 páginas) |
+| **Documento original** | `../JIT ENTREGA.docx` (sin modificar, 9 páginas) |
 | **Documento corregido** | `JIT ENTREGA corregido.docx` y `JIT ENTREGA corregido.pdf` (11 páginas, contadas con Word) |
-| **Devoluciones** | `DEVOLUCIONES-JIT/Rubrica_Trabajo_JIT2026-T114.pdf` (Á. Soldano, 9,875, APROBADO) y `DEVOLUCIONES-JIT/Rubrica_Trabajo_2026 - JIT2026-T114.xlsx` (E. Godoy, 8,25, aprobado con modificaciones menores) |
+| **Devoluciones** | `../devolucion/Rubrica_Trabajo_JIT2026-T114.pdf` (Á. Soldano, 9,875, APROBADO) y `../devolucion/Rubrica_Trabajo_2026 - JIT2026-T114.xlsx` (E. Godoy, 8,25, aprobado con modificaciones menores) |
 | **Figuras y scripts** | `figuras/` (PNG finales; `build_docx.py` arma el docx, `capturas_jit.py` toma las capturas y `render_mmd.py` dibuja la Figura 1) |
 | **Fecha** | 2026-10-17 · código en la rama `feature/deepseek-sin-razonamiento` (HEAD `a360166` más los cambios de la sección 5) |
 
@@ -32,7 +32,7 @@ los textos que el artículo transcribe (sección 5). Las rutas son relativas a l
 
 | # | Lo que decía el artículo | Lo que dice ahora | Evidencia |
 |---|---|---|---|
-| A1 | Fig. 1: grafo con `save` como arista a `__end__` | Grafo actual: nodos orchestrator, monitor, clinical y save; aristas pipeline, followup, save y cancel; `monitor→END` cuando no hay EHR. También se regeneró `docs/langgraph.png`. | `orchestrator/graph.py:469-472` (nodos); `build_graph().get_graph().draw_mermaid()` |
+| A1 | Fig. 1: grafo con `save` como arista a `__end__` | Grafo actual: nodos orchestrator, monitor, clinical y save; aristas pipeline, followup, save y cancel; `monitor→END` cuando no hay EHR. También se regeneró `docs/tecnica/langgraph.png`. | `orchestrator/graph.py:469-472` (nodos); `build_graph().get_graph().draw_mermaid()` |
 | A2 | "determina dinámicamente la acción … infiriendo la intención del usuario" | Reglas determinísticas: existencia de un reporte, id de paciente (regex), frases de reinicio y confirmación explícita para guardar | `orchestrator/router.py:16-32`; ADR-0004, ADR-0008 |
 | A3 | "evalúa explícitamente la suficiencia…" | Criterio determinístico: es insuficiente si hay métricas sin datos y la ventana está acotada; en ese caso se re-analiza con la serie completa; máximo 3 ciclos | `orchestrator/graph.py:306-315`; ADR-0010 |
 | A4 | Historial "almacenado en MongoDB" | SQLite local por defecto; MongoDB intercambiable | `tools/history_store.py:6-7`, `:188`; ADR-0005 |
@@ -119,7 +119,7 @@ Control automático: las 17 referencias se citan en el cuerpo y cada cita del cu
    - Problemas: era un identificador interno del plan, y la afirmación era falsa, porque ADA S06 está indexada (ADR-0017).
    - Ahora dice `"ADA Standards of Care 2024 §6 (niveles de hipoglucemia)"`.
    - Gate: `213 passed, 5 deselected`.
-2. **`docs/langgraph.png`.** Se regeneró con el grafo actual; es la misma imagen que la Figura 1. La anterior no tenía el nodo `save` ni las aristas `cancel` y `monitor→END`.
+2. **`docs/tecnica/langgraph.png`.** Se regeneró con el grafo actual; es la misma imagen que la Figura 1. La anterior no tenía el nodo `save` ni las aristas `cancel` y `monitor→END`.
 3. `graphify update .` ejecutado.
 
 **Hallazgos documentados que no se corrigieron (no afectan al artículo):**
@@ -132,7 +132,7 @@ Control automático: las 17 referencias se citan en el cuerpo y cada cita del cu
 - **Documentación interna desactualizada:**
   - `docs/CLAUDE.md`: 4 CSV, 9 casos, Monitor ReAct con Groq;
   - `data/sample/README.md`, en las descripciones de P002 y P003;
-  - comentarios que todavía mencionan Llama o MongoDB (`agents/monitor.py:6`, `orchestrator/state.py`, `docs/tests.md`, `docs/architecture.puml`).
+  - comentarios que todavía mencionan Llama o MongoDB (`agents/monitor.py:6`, `orchestrator/state.py`, `docs/tecnica/tests.md`, `docs/tecnica/architecture.puml`).
 - **Textos internos visibles en la interfaz:** "[Clinical fallback]", ids F1-xx en la pestaña Evaluación, nombres crudos de métricas en las Limitaciones del reporte.
 
 ---
@@ -166,11 +166,11 @@ PYTHONPATH=. uv run python -c "from tools.threshold_tools import detect_threshol
 [print(p, len([a for m in ('hba1c','glucose_fasting','glucose_postprandial') for a in d(p, m)])) for p in ('P001','P002','P003','P004','P005')]"
 
 # Capturas (con la UI corriendo: uv run python main.py)
-uv run --with playwright python "docs/entregas_actualizado_16-10/CORRECCION_JIT/figuras/capturas_jit.py" /tmp/figs
+uv run --with playwright python "docs/publicaciones/jit/articulo/correccion/figuras/capturas_jit.py" /tmp/figs
 
 # Regenerar el docx desde el original
-cd docs/entregas_actualizado_16-10 && uv run --no-project --with python-docx python figuras/build_docx.py \
-  "JIT ENTREGA.docx" "JIT ENTREGA corregido.docx" figuras
+cd docs/publicaciones/jit/articulo && uv run --no-project --with python-docx python correccion/figuras/build_docx.py \
+  "JIT ENTREGA.docx" "correccion/JIT ENTREGA corregido.docx" correccion/figuras
 ```
 
 Notas sobre los scripts:

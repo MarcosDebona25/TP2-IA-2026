@@ -3,7 +3,7 @@
 > **Qué es este documento.** Es la **única fuente de verdad** para las correcciones pendientes del
 > sistema: qué está mal, qué decisión se tomó, qué hay que cambiar y cómo se verifica que quedó
 > resuelto. Surge de revisar el código contra el artículo [Articulo_JIT_2026.docx](Articulo_JIT_2026.docx)
-> y la [definición conceptual](TP_2.1%20Definicion%20Conceptual.md) (revisión del 2026-09-15).
+> y la [definición conceptual](consigna/TP_2.1%20Definicion%20Conceptual.md) (revisión del 2026-09-15).
 >
 > Si un ítem de acá contradice a `estado_proyecto.md` o a `CLAUDE.md`, **manda este documento**
 > hasta que el ítem se cierre y esos archivos se sincronicen (ver [§9](#9-documentación-a-sincronizar)).
@@ -71,7 +71,7 @@ uv run python tests/eval_runner.py                   # evaluación cualitativa c
 | **F4-05** | [EAS-31](https://linear.app/easymetricdev/issue/EAS-31) | Casos de evaluación nuevos | 🟡 Media | F1-*, F2-01 | 🟨 (edge_04, edge_06, adv_04 y expectativas actualizadas; faltan edge_05 y adv_05) |
 | **F4-06** | [EAS-32](https://linear.app/easymetricdev/issue/EAS-32) | Sincronizar documentación y artículo | 🟡 Media | todo | ⬜ |
 
-**Prioridad actual:** el [plan MVP](plan_mvp.md) define qué ítems entran al MVP y en qué orden.
+**Prioridad actual:** el [plan MVP](planificacion/plan_mvp.md) define qué ítems entran al MVP y en qué orden.
 
 **Orden sugerido:** F0 → F2-01 (cambia expectativas de muchos tests, conviene temprano) → F1-01…F1-06
 → F2-06 → resto de F2 → F3 → F4.
@@ -605,7 +605,7 @@ El wrapper solo recibe `query` ([clinical.py:59-66](../agents/clinical.py#L59));
 
 **Problema.** El artículo y la definición conceptual (§2.4, paso 3) describen **dos** campos: orientación (instrucción para el Orquestador y el Monitor) y contexto clínico. La UI solo tiene contexto, y `query` está fijo en `"Realizá un análisis clínico integral del paciente."` ([app.py:95](../interface/app.py#L95)).
 
-**Cambios.** Agregar el campo `Orientación` → `query` (con el texto actual como default si está vacío). Documentar en `docs/interfaz.md`.
+**Cambios.** Agregar el campo `Orientación` → `query` (con el texto actual como default si está vacío). Documentar en `docs/tecnica/interfaz.md`.
 
 **Aceptación:** [ ] "analizá solo los últimos 3 meses" → `analysis_window.last_n_months == 3` (test `llm`).
 
@@ -625,7 +625,7 @@ Al reanudar un thread, LangGraph advierte: *"Deserializing unregistered type orc
 
 ### F4-03 · Limpieza de dependencias y `main.py`
 - `streamlit` (la UI es Gradio) y `langchain-openai` no se usan; `faker` figura en el stack pero `generate_patients.py` no la importa. **Verificar con `grep` antes de quitar.**
-- `playwright` lo usa `scripts_capturas.py` (sin versionar): agregarlo al grupo `dev` si el script se versiona, o dejar ambos fuera.
+- `playwright` lo usa `docs/capturas/capturar.py` (se corre con `uv run --no-project --with playwright`): agregarlo al grupo `dev` si el script se versiona, o dejar ambos fuera.
 - `main.py` es un placeholder: que lance la UI (`interface.app`) o eliminarlo. `pyproject.toml → description` vacío.
 - [ ] Aceptación: `uv lock` + gate verde tras la limpieza.
 
@@ -678,9 +678,9 @@ Al cerrar cada fase, actualizar:
 |---|---|
 | `README.md` | Tabla de pacientes (alertas esperadas con F2-01, P005), conteo de tests del gate, flujo de guardado real. |
 | `docs/CLAUDE.md` | Estado de implementación, decisiones D1–D10, "Próximos pasos". Corregir datos desactualizados: ruta de `uv` de otro integrante (`C:\Users\marco`), la línea que dice que `rag/`, `generate_patients.py` y `components.py` están "vacíos/pendientes", y el Monitor descripto con `llama-3.3-70b` mientras el default es otro. |
-| `docs/estado_proyecto.md` | Está fechado al 26/06/2026: reemplazar la sección de pendientes por un enlace a este plan. |
-| `docs/TP_2.1 Definicion Conceptual.md` | §2.6: tabla de umbrales de control (F2-01), firmas reales de Tools 7, 8 y 9, `RoutingDecision`. |
-| `docs/tests.md` | Nuevos tests (`test_regresiones.py`, modo estricto msgpack) y casos de eval. |
+| `docs/planificacion/estado_proyecto.md` | Está fechado al 26/06/2026: reemplazar la sección de pendientes por un enlace a este plan. |
+| `docs/consigna/TP_2.1 Definicion Conceptual.md` | §2.6: tabla de umbrales de control (F2-01), firmas reales de Tools 7, 8 y 9, `RoutingDecision`. |
+| `docs/tecnica/tests.md` | Nuevos tests (`test_regresiones.py`, modo estricto msgpack) y casos de eval. |
 | `rag/RAG_TUNING.md` | Umbral de distancia calibrado, `--rebuild`, metadata `section`. |
 | `Articulo_JIT_2026.docx` | Revisar afirmaciones que cambian: "umbrales diagnósticos y de control" (F2-01); clasificación longitudinal (F2-04, hoy no implementada); persistencia y routing estructurado dejan de ser trabajo futuro (F1-04, F3-01); resultados de la evaluación con los casos nuevos. |
 

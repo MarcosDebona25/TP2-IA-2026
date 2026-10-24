@@ -10,7 +10,7 @@ Convenciones de este archivo
   Cada línea es un elemento de texto. Los rótulos entre corchetes dentro del bloque
   (por ejemplo "{idea principal}") indican el rol del texto y no se muestran.
 - Los bloques [NOTAS] ... [/NOTAS] contienen las notas del orador, textuales.
-- Las rutas son relativas a la raíz del repositorio. "docx" es docs/JIT_ENTREGA_corrección.docx.
+- Las rutas son relativas a la raíz del repositorio. "docx" es docs/publicaciones/jit/articulo/JIT_ENTREGA_corrección.docx.
 - Las palabras visibles no incluyen el título ni el texto que aparece dentro de una captura.
 
 
@@ -18,7 +18,7 @@ Convenciones de este archivo
 1. RESULTADO DE LA VERIFICACIÓN DE LA PLANTILLA
 ==========================================================================================
 
-Archivo: docs/Plantilla_Presentaciones_JIT_2026_-_V3.pptx
+Archivo: docs/publicaciones/jit/presentacion/Plantilla_Presentaciones_JIT_2026_-_V3.pptx
 - Formato: PowerPoint .pptx (Office Open XML), 16:9, 13,333 x 7,5 pulgadas (12192000 x 6858000 EMU).
   Metadatos: título "Plantilla de presentaciones JIT 2026", generada con PptxGenJS.
 - Layouts: PORTADA, CONTENIDO, GUIA, CIERRE (más DEFAULT vacío). 15 diapositivas de ejemplo:
@@ -32,7 +32,7 @@ Archivo: docs/Plantilla_Presentaciones_JIT_2026_-_V3.pptx
     eliminá las otras tres."
   - Layout GUIA: "GUÍA PARA AUTORES | ELIMINAR ESTA DIAPOSITIVA ANTES DE PRESENTAR".
   - Nota de la diapositiva libre: "Diapositiva libre: duplicala si necesitás más (máximo 10 en total)."
-- La rúbrica (docs/Rubrica_Oral_2026.xlsx) no menciona plantilla ni formato.
+- La rúbrica (docs/publicaciones/jit/presentacion/Rubrica_Oral_2026.xlsx) no menciona plantilla ni formato.
 - Conclusión: alcanza con respetar el diseño de la plantilla. Se puede usar Claude Slides
   siempre que reproduzca los elementos fijos listados abajo.
 
@@ -89,7 +89,7 @@ Recomendaciones de formato de la plantilla (layout GUIA), que se respetan:
 3. CRITERIOS DE LA RÚBRICA Y COBERTURA
 ==========================================================================================
 
-Fuente: docs/Rubrica_Oral_2026.xlsx, Hoja1, filas 8 a 11. Escala 1 a 10 por criterio.
+Fuente: docs/publicaciones/jit/presentacion/Rubrica_Oral_2026.xlsx, Hoja1, filas 8 a 11. Escala 1 a 10 por criterio.
 
 | N | Criterio | Nivel "Muy satisfactorio" (9 a 10) | Diapositivas que lo cubren | Cómo |
 |---|---|---|---|---|
@@ -104,7 +104,7 @@ Fuente: docs/Rubrica_Oral_2026.xlsx, Hoja1, filas 8 a 11. Escala 1 a 10 por crit
 ==========================================================================================
 
 4.1 Colores que fija la plantilla (prevalecen)
-Origen: docs/Plantilla_Presentaciones_JIT_2026_-_V3.pptx, ppt/theme/theme1.xml, esquema "JIT 2026",
+Origen: docs/publicaciones/jit/presentacion/Plantilla_Presentaciones_JIT_2026_-_V3.pptx, ppt/theme/theme1.xml, esquema "JIT 2026",
 y colores de los layouts (ppt/slideLayouts/slideLayout2.xml a slideLayout5.xml).
 
 | Rol del tema | Hex | Uso en la plantilla | Uso en esta presentación |
@@ -219,7 +219,7 @@ Ocampo, Franco
 Disposición:
 - Layout PORTADA sin cambios: logo JIT arriba a la izquierda, rótulos PROYECTO, DIRECTOR/A
   DEL PROYECTO y AUTOR/ES en la fila inferior, banda UTN Santa Fe y línea tricolor fijas.
-- Logo del TP (docs/presentacion/recursos/logo-tp.png) arriba a la derecha, alineado con el
+- Logo del TP (docs/publicaciones/jit/presentacion/recursos/logo-tp.png) arriba a la derecha, alineado con el
   logo JIT: alto 1,20 pulgadas, borde derecho en x 12,83, y 0,45.
 - Logo UTN FRSF: lo aporta la banda fija "UTN SANTA FE" del layout. No se agrega otro logo
   UTN (decisión del grupo, ver conflicto C4).
@@ -450,7 +450,7 @@ Duración estimada: 0:53
 [/VISIBLE]
 
 Disposición:
-- Punto focal: docs/presentacion/capturas/05-alertas-tendencias.png recortada a la región de
+- Punto focal: docs/publicaciones/jit/presentacion/capturas/05-alertas-tendencias.png recortada a la región de
   las tarjetas Alertas y Tendencias (en la captura de 1920 x 1080, aproximadamente x 470 a 1890,
   y 385 a 1065), escalada al ancho del área de contenido.
 - Dos anotaciones con una línea guía fina hacia la fila correspondiente: la 1 apunta a la fila
@@ -464,7 +464,7 @@ Ese flujo puede verse en la interfaz web, construida con Gradio, sobre el pacien
 [/NOTAS]
 
 Fuentes:
-- Captura: docs/presentacion/capturas/05-alertas-tendencias.png (app local, 2026-10-24, LLM openai_compat deepseek-flash).
+- Captura: docs/publicaciones/jit/presentacion/capturas/05-alertas-tendencias.png (app local, 2026-10-24, LLM openai_compat deepseek-flash).
 - Valores de P003 (media 87,4, mínimo 55, HbA1c 6,1, alerta moderada < 70 mg/dL del 2025-08-15):
   la propia captura, data/sample/P003.csv y docx Resultados y discusión, párrafo 4 y Tabla 2 (edge_03).
 - Umbral de hipoglucemia moderada < 70 mg/dL: tools/threshold_tools.py (DM2_CONTROL_THRESHOLDS), ADR-0011.
@@ -541,8 +541,8 @@ Fuentes:
 - LLM-as-judge, precisión de recuperación, enrutamiento estructurado, CGM, seudonimización,
   validación con profesionales y comité de ética: docx Conclusiones, párrafo 4 (trabajo futuro).
 - Ley 25.326 y datos de salud sensibles: docx Conclusiones, párrafo 3.
-- Enrutamiento pendiente de LLM: orchestrator/router.py (TODO en is_followup_message) y docs/roadmap_mejoras.md, punto 2.
-- LLM-as-judge: docs/roadmap_mejoras.md, punto 5.
+- Enrutamiento pendiente de LLM: orchestrator/router.py (TODO en is_followup_message) y docs/planificacion/roadmap_mejoras.md, punto 2.
+- LLM-as-judge: docs/planificacion/roadmap_mejoras.md, punto 5.
 - CGM como extensión futura: orchestrator/state.py (CGMMetrics) y docs/CLAUDE.md, decisión 3.
 - Conclusión oral (última frase): docx Conclusiones, párrafo 1.
 
@@ -594,10 +594,10 @@ Ocampo Franco agradece e invita a preguntas con una frase libre.
 
 Reglas para ambos: draw.io, fondo transparente o blanco, Calibri, rótulos 18 pt o más, sin
 íconos, sin cajas dentro de cajas, sin gradientes, sin sombras. Exportar .drawio y .png
-(2x, fondo blanco) a docs/presentacion/diagramas/.
+(2x, fondo blanco) a docs/publicaciones/jit/presentacion/diagramas/.
 
 D1 · Arquitectura general (destino: diapositiva 4)
-Archivo sugerido: docs/presentacion/diagramas/d1-arquitectura.drawio y .png
+Archivo sugerido: docs/publicaciones/jit/presentacion/diagramas/d1-arquitectura.drawio y .png
 Propósito: mostrar quién hace qué y con qué fuentes, sin la dinámica del flujo.
 Nodos:
 - N1 "Médico" (actor, texto sin forma o con borde #5B6B7D). Fuente: interface/app.py (usuario de la UI).
@@ -624,7 +624,7 @@ datos debajo de su agente (N5 bajo N3, N6 y N7 bajo N4), banda N8 entre agentes 
 No incluir el nodo de guardado (aparece en D2) para no duplicar ideas.
 
 D2 · Flujo de una consulta (destino: diapositiva 6)
-Archivo sugerido: docs/presentacion/diagramas/d2-flujo.drawio y .png
+Archivo sugerido: docs/publicaciones/jit/presentacion/diagramas/d2-flujo.drawio y .png
 Propósito: mostrar el enrutamiento y el ciclo de refinamiento.
 Nodos:
 - F1 "Mensaje del médico" (inicio). Fuente: interface/app.py.
@@ -656,11 +656,11 @@ y el ciclo F5 a F3 dibujado por encima.
 9. CAPTURAS
 ==========================================================================================
 
-Todas en docs/presentacion/capturas/, PNG 1920 x 1080, tema claro, tomadas el 2026-10-24 con
+Todas en docs/publicaciones/jit/presentacion/capturas/, PNG 1920 x 1080, tema claro, tomadas el 2026-10-24 con
 Playwright y Chromium headless sobre la app local (uv run python main.py), LLM activo
 openai_compat deepseek-flash. Paciente sintético P003. Sin claves, sin datos personales reales,
 sin errores ni avisos de respaldo visibles (se verificó en cada captura de resultado).
-Script reproducible: docs/presentacion/capturas/capturar.py.
+Script reproducible: docs/publicaciones/jit/presentacion/capturas/capturar.py.
 
 | Archivo | Qué muestra | Diapositiva de destino |
 |---|---|---|
@@ -706,7 +706,7 @@ Criterios de aceptación:
 - El gráfico no debe tocar la banda UTN Santa Fe ni la línea tricolor (y > 6,6 pulgadas).
 
 Plan alternativo si no cumple (consigna de la fase 2): captura real de la app desenfocada y
-oscurecida. Usar docs/presentacion/capturas/05-alertas-tendencias.png con desenfoque gaussiano
+oscurecida. Usar docs/publicaciones/jit/presentacion/capturas/05-alertas-tendencias.png con desenfoque gaussiano
 fuerte y una capa #0B1118 al 70 %. En ese caso, "Gracias" y "¿Preguntas?" pasan a #FFFFFF
 (contraste 19:1 sobre #0B1118) y debe registrarse en el "Registro de fase 2" que el texto del
 cierre deja el color fijo de la plantilla. La marca violeta del logo JIT pierde contraste
@@ -741,7 +741,7 @@ C4. Plantilla contra consigna del grupo: logos.
 - Consigna: logos del TP y de UTN FRSF solo en la portada, salvo que la plantilla exija otra cosa.
 - Plantilla: el logo JIT y la banda "UTN SANTA FE" están en todos los layouts.
 - Resolución: la plantilla prevalece. Logo JIT y banda UTN en todas las diapositivas. Logo del
-  TP solo en la portada. docs/utn.png duplicaría la banda fija de la portada, por eso no se
+  TP solo en la portada. docs/publicaciones/jit/presentacion/recursos/utn.png duplicaría la banda fija de la portada, por eso no se
   agrega (decisión del grupo del 2026-10-24).
 
 C5. Plantilla contra paleta de la app: turquesa.
@@ -773,11 +773,11 @@ C9. Documentación interna contra código: cantidad de casos cualitativos.
 
 C10. Docx contra repositorio: figuras.
 - Las figuras 2 y 3 del docx y docs/capturas/ son previas al rebranding (commit cb9f151 del 2026-10-21).
-- Resolución: se usan solo las capturas nuevas de docs/presentacion/capturas/.
+- Resolución: se usan solo las capturas nuevas de docs/publicaciones/jit/presentacion/capturas/.
 
 C11. Nombre del archivo fuente.
-- La consigna nombra docs/JIT_ENTREGA_correcion.docx. El archivo real es
-  docs/JIT_ENTREGA_corrección.docx (con tilde). Se trata del mismo documento.
+- La consigna nombra docs/publicaciones/jit/articulo/JIT_ENTREGA_correcion.docx. El archivo real es
+  docs/publicaciones/jit/articulo/JIT_ENTREGA_corrección.docx (con tilde). Se trata del mismo documento.
 
 C12. Carácter en la categoría de la portada.
 - El texto fijo de la plantilla "Trabajos en Desarrollo – Estudiantes de grado" usa un guion
@@ -808,7 +808,7 @@ Supuestos
 Decisiones del grupo (resueltas el 2026-10-24)
 - Directora del proyecto: Milagros Gutiérrez.
 - No se agrega un logo UTN adicional en la portada. La banda fija "UTN SANTA FE" de la plantilla
-  cumple ese rol. El archivo logo-utn-frsf.png se retiró de docs/presentacion/recursos/.
+  cumple ese rol. El archivo logo-utn-frsf.png se retiró de docs/publicaciones/jit/presentacion/recursos/.
 - Apellidos: Agüero y Gaitán.
 - Campo PROYECTO de la portada: "UTN Facultad Regional Santa Fe" y
   "JIT 2026 · 29 de octubre de 2026", aunque la plantilla lo pensó para proyectos de investigación.
@@ -857,7 +857,7 @@ Elementos fijos de la plantilla
 Diagramas
 - R9. draw.io de escritorio no pudo descargarse en el entorno de construcción (el proxy
   bloqueó la descarga desde GitHub Releases). Los diagramas se definieron como datos en
-  docs/presentacion/diagramas/generar_diagramas.py, que escribe el .drawio editable y, con la
+  docs/publicaciones/jit/presentacion/diagramas/generar_diagramas.py, que escribe el .drawio editable y, con la
   misma geometría, el .svg y el .png a 2x. Si se requiere una exportación hecha por draw.io,
   abrir cada .drawio y usar Archivo > Exportar como > PNG, escala 200 %, fondo blanco.
 - R10. D2 no sigue al pie de la letra la disposición sugerida. El orden de nodos sugerido
@@ -879,10 +879,10 @@ Imagen de cierre
 - R14. Qwen Image, intento 2, con el mismo pedido redactado sin códigos hexadecimales ni
   medidas: descartado. El gráfico ocupa la zona central (y 1,3 a 5,2 pulgadas), tiene
   tendencia ascendente en lugar de doce mediciones estables y repite la gota.
-- R15. Ambos intentos se guardaron en docs/presentacion/recursos/qwen-descartadas/. Se aplicó
-  el plan alternativo del punto 10: docs/presentacion/capturas/05-alertas-tendencias.png con
+- R15. Ambos intentos se guardaron en docs/publicaciones/jit/presentacion/recursos/qwen-descartadas/. Se aplicó
+  el plan alternativo del punto 10: docs/publicaciones/jit/presentacion/capturas/05-alertas-tendencias.png con
   desenfoque gaussiano (radio 22 px) y capa #0B1118 al 70 %. Archivo:
-  docs/presentacion/recursos/cierre-fondo.png.
+  docs/publicaciones/jit/presentacion/recursos/cierre-fondo.png.
 - R16. Por el plan alternativo, "Gracias" y "¿Preguntas?" pasan de #582899 a #FFFFFF, como
   prevé el punto 10. Se deja el color fijo de la plantilla.
 - R17. En el cierre se usa solo el cuadro JIT (image2.png), centrado, porque la marca violeta
@@ -981,6 +981,6 @@ Ajuste de densidad (pedido del grupo, 2026-10-24, después de la primera versió
   muy oscuro y disruptivo). Reemplaza a R15 a R18 en la diapositiva 10. Fondo blanco como el
   resto. A la izquierda, logo JIT completo, "Gracias" (96 px, #582899) y "¿Preguntas?" (56 px,
   #6E6780), que vuelven a los colores fijos de la plantilla. A la derecha, la captura en tema
-  claro docs/presentacion/capturas/03-reporte.png, nítida y enmarcada con borde #E2E8F0, para
+  claro docs/publicaciones/jit/presentacion/capturas/03-reporte.png, nítida y enmarcada con borde #E2E8F0, para
   que la app se reconozca. Se descartó un fondo claro desenfocado a sangre porque el texto del
   reporte competía con "Gracias". recursos/cierre-fondo.png queda en el repositorio sin uso.

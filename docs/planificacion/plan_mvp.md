@@ -1,7 +1,7 @@
 # Plan MVP — sistema funcionando de punta a punta en local
 
 > **Qué es este documento.** Ordena el trabajo para llegar a un MVP usable. No reemplaza al
-> [plan de correcciones](plan_correcciones.md): lo **prioriza** (qué ítems entran al MVP y en qué orden) y agrega
+> [plan de correcciones](../plan_correcciones.md): lo **prioriza** (qué ítems entran al MVP y en qué orden) y agrega
 > los ítems de infraestructura `MVP-0X` que el plan original no tenía. Cada ítem tiene su issue en Linear.
 
 ## Definición de "MVP funcionando"
@@ -68,13 +68,13 @@ Estados: ⬜ pendiente · 🟨 en curso · ✅ hecho
 
 | ID | Título | Estado |
 |---|---|---|
-| — | Modelo disponible en Groq (`gpt-oss-120b`), tools con el nombre de los prompts, tests `llm` que detectan fallback ([ADR-0014](adr/0014-modelo-groq-gpt-oss.md)) | ✅ |
-| F3-04 | **Reporte estructurado con generación anclada** (citas por id de fragmento, cifras validadas, disclaimer por código; 2 llamadas por análisis en `lean`) ([ADR-0019](adr/0019-reporte-estructurado-y-generacion-anclada.md)) | ✅ |
+| — | Modelo disponible en Groq (`gpt-oss-120b`), tools con el nombre de los prompts, tests `llm` que detectan fallback ([ADR-0014](../adr/0014-modelo-groq-gpt-oss.md)) | ✅ |
+| F3-04 | **Reporte estructurado con generación anclada** (citas por id de fragmento, cifras validadas, disclaimer por código; 2 llamadas por análisis en `lean`) ([ADR-0019](../adr/0019-reporte-estructurado-y-generacion-anclada.md)) | ✅ |
 | F3-04 (previo) | Precisión del reporte según la evaluación: sin tendencia con datos insuficientes, período de datos explícito, fuente del umbral fuera del prompt y **validador de citas** | ✅ |
-| — | Cadena de respaldo de modelos (`gpt-oss-120b` → `gpt-oss-20b`): duplica la cuota diaria del free tier ([ADR-0016](adr/0016-cadena-de-respaldo-de-modelos.md)) | ✅ |
-| F3-06 (parcial) | La UI avisa cuando un agente cayó al fallback (cuota agotada, sin key…) en lugar de mostrar un reporte pobre sin explicación ([ADR-0018](adr/0018-modo-de-ejecucion-visible.md)) | ✅ |
-| — | OpenRouter + DeepSeek V4 Flash como proveedor real de bajo costo, `openai_compat` genérico y respaldo entre proveedores; prueba end-to-end con datos sintéticos: 28–33 s y ~0,0005 USD por análisis ([ADR-0020](adr/0020-proveedores-openai-compatibles-y-cadena-entre-proveedores.md)) | ✅ |
-| F3-05 | Contexto compacto + `AGENT_MODE=lean` (Monitor en 1 llamada, Clínico con historial precargado) + razonamiento `low` ([ADR-0015](adr/0015-modo-lean-para-free-tier.md)) | ✅ |
+| — | Cadena de respaldo de modelos (`gpt-oss-120b` → `gpt-oss-20b`): duplica la cuota diaria del free tier ([ADR-0016](../adr/0016-cadena-de-respaldo-de-modelos.md)) | ✅ |
+| F3-06 (parcial) | La UI avisa cuando un agente cayó al fallback (cuota agotada, sin key…) en lugar de mostrar un reporte pobre sin explicación ([ADR-0018](../adr/0018-modo-de-ejecucion-visible.md)) | ✅ |
+| — | OpenRouter + DeepSeek V4 Flash como proveedor real de bajo costo, `openai_compat` genérico y respaldo entre proveedores; prueba end-to-end con datos sintéticos: 28–33 s y ~0,0005 USD por análisis ([ADR-0020](../adr/0020-proveedores-openai-compatibles-y-cadena-entre-proveedores.md)) | ✅ |
+| F3-05 | Contexto compacto + `AGENT_MODE=lean` (Monitor en 1 llamada, Clínico con historial precargado) + razonamiento `low` ([ADR-0015](../adr/0015-modo-lean-para-free-tier.md)) | ✅ |
 
 ## Fuera del MVP
 
@@ -90,7 +90,7 @@ Estado al 2026-09-24: M1, M2 y M3 hechos y mergeados en `develop` (sin push). Ga
 | 1 | ~~API key de LLM~~ ✅ Groq configurada. **MVP-06 (EAS-38), corrida del 2026-09-25:** 9 de 12 casos con el LLM real (happy_01–03, edge_01–04, edge_06) + adv_03 sin LLM, todos correctos en lo clínico (alertas, deltas, hipoglucemia, cambio de paciente, datos insuficientes). Las cifras mal calculadas de edge_06 ya están corregidas. **Faltan adv_01, adv_02 y adv_04** (se agotó la cuota diaria de ambos modelos): `uv run python tests/eval_runner.py --case adv_01` (y adv_02, adv_04) | Franco | Cierre del MVP |
 | 2 | ~~Autorizar Linear y sincronizar~~ ✅ 2026-09-24: EAS-6…11, 18, 19, 27, 30 en Done; EAS-12, 17, 29 en In Progress (con lo que falta comentado); MVP-01…06 = EAS-33…38 | Franco | — |
 | 3 | ~~Validación clínica 🩺~~ ✅ 2026-09-25: el equipo aprobó la tabla de metas de control (EAS-12 cerrado) | Equipo | — |
-| 4 | ~~Contenido ADA~~ ✅ 2026-09-25: secciones 2/6/9/10 incorporadas (fuera de git por copyright; `data/guias/README.md`) con embeddings multilingües ([ADR-0017](adr/0017-embeddings-multilingues-y-balance-de-fuentes.md)). Opcional: volver a correr el conversor (`scripts/html_a_markdown.py`) para quitar el título "References" del final de cada archivo | Franco | — |
+| 4 | ~~Contenido ADA~~ ✅ 2026-09-25: secciones 2/6/9/10 incorporadas (fuera de git por copyright; `data/guias/README.md`) con embeddings multilingües ([ADR-0017](../adr/0017-embeddings-multilingues-y-balance-de-fuentes.md)). Opcional: volver a correr el conversor (`scripts/html_a_markdown.py`) para quitar el título "References" del final de cada archivo | Franco | — |
 | 5 | **Push** de `develop` a `origin` | Franco | Que el equipo vea los cambios |
 
-Después del MVP, el orden sigue el [plan de correcciones](plan_correcciones.md): F2-02…F2-05, Fase 3, Fase 4.
+Después del MVP, el orden sigue el [plan de correcciones](../plan_correcciones.md): F2-02…F2-05, Fase 3, Fase 4.
