@@ -12,7 +12,7 @@ from agents.llm_factory import DEFAULT_MODELS, active_model, generation_kwargs, 
 def _sin_config(monkeypatch):
     for var in ("LLM_PROVIDER", "LLM_MODEL", "GROQ_API_KEY", "GOOGLE_API_KEY", "GEMINI_API_KEY",
                 "LLM_MAX_TOKENS", "LLM_REASONING_EFFORT", "AGENT_MODE", "LLM_FALLBACK_MODELS", "OPENROUTER_API_KEY",
-                "LLM_API_KEY", "LLM_BASE_URL", "OPENROUTER_DATA_COLLECTION", "LLM_TIMEOUT_S"):
+                "LLM_API_KEY", "LLM_BASE_URL", "OPENROUTER_DATA_COLLECTION", "LLM_TIMEOUT_S", "LLM_THINKING"):
         monkeypatch.delenv(var, raising=False)
 
 
@@ -125,6 +125,30 @@ def test_openai_compat_usa_la_url_configurada(monkeypatch):
     monkeypatch.setenv("LLM_MODEL", "deepseek-chat")
     llm = build_llm()
     assert llm.model_name == "deepseek-chat" and str(llm.openai_api_base) == "https://api.deepseek.com"
+
+
+def test_deepseek_desactiva_el_razonamiento_por_defecto(monkeypatch):
+    """En modo razonamiento DeepSeek rechaza el tool_choice forzado de la salida estructurada (ADR-0022)."""
+    from agents.llm_factory import build_llm
+
+    monkeypatch.setenv("LLM_PROVIDER", "openai_compat")
+    monkeypatch.setenv("LLM_API_KEY", "sk-x")
+    monkeypatch.setenv("LLM_BASE_URL", "https://api.deepseek.com")
+    monkeypatch.setenv("LLM_MODEL", "deepseek-flash")
+    assert build_llm().extra_body == {"thinking": {"type": "disabled"}}
+    monkeypatch.setenv("LLM_THINKING", "enabled")
+    assert build_llm().extra_body == {"thinking": {"type": "enabled"}}
+
+
+def test_otras_apis_compatibles_no_reciben_el_parametro_thinking(monkeypatch):
+    from agents.llm_factory import build_llm
+
+    monkeypatch.setenv("LLM_PROVIDER", "openai_compat")
+    monkeypatch.setenv("LLM_API_KEY", "sk-x")
+    monkeypatch.setenv("LLM_BASE_URL", "https://api.cerebras.ai/v1")
+    assert not build_llm().extra_body
+    monkeypatch.setenv("LLM_THINKING", "disabled")
+    assert build_llm().extra_body == {"thinking": {"type": "disabled"}}
 
 
 def test_cadena_entre_proveedores_omite_los_que_no_tienen_key(monkeypatch):
