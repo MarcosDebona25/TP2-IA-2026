@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <style>
+    .bg { fill: #0F766E; }
+    .fg-stroke { stroke: #FFFFFF; }
+    .fg-fill { fill: #FFFFFF; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #2DD4BF; }
+      .fg-stroke { stroke: #0B1118; }
+      .fg-fill { fill: #0B1118; }
+    }
+  </style>
+  <!-- Cuadrado redondeado al 26% (24 * 0.26 = 6.24) -->
+  <rect class="bg" width="24" height="24" rx="6.24" />
+  <!-- Monograma MC Estadístico optimizado para 16px -->
+  <g transform="translate(1.8, 1.8) scale(0.85)" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path class="fg-stroke" d="M18.7 6A9 9 0 1 0 18.7 18" />
+    <path class="fg-stroke" d="M8 15L10.3 9.8L12.8 13.5L15.4 8.5L17.6 12.2" />
+    <circle class="fg-fill" cx="18.3" cy="13.4" r="1.5" stroke="none" />
+  </g>
+</svg>

@@ -69,9 +69,12 @@ uv lock                 # regenerar lockfile tras cambiar dependencias
   `LoggingCallbackHandler` (`BaseCallbackHandler`) que registra nodos/routing hoy y
   `llm_*`/`tool_*` en cuanto existan agentes/tools reales. Se engancha al grafo con
   `config={"callbacks": get_callbacks()}`. LangSmith se activa solo vía env vars.
-- [interface/app.py](interface/app.py) — UI Gradio que ya invoca `orchestrator.graph.app`
-  real con `thread_id` por sesión y callbacks de logging. Esqueleto funcional (chat +
-  reporte); falta el layout completo y la pestaña de observabilidad (ver plan de D).
+- [interface/app.py](interface/app.py) — UI Gradio que invoca `orchestrator.graph.app`
+  real con `thread_id` por sesión y callbacks de logging. Layout de dashboard clínico (barra
+  lateral + indicadores + reporte junto al chat + alertas agrupadas + tendencias) y pestañas de
+  Observabilidad y Evaluación. Ver [docs/interfaz.md](interfaz.md).
+- [interface/theme.py](interface/theme.py) — sistema visual (ADR-0021): tema Gradio, tokens
+  `--tp-*` claro/oscuro, CSS, fuentes embebidas (`interface/assets/fonts/`) y selector de tema.
 - [tools/patient_tools.py](tools/patient_tools.py) — tools determinísticas del Monitor sobre
   el EHR. Se invocan **por `patient_id`** (cargan + recortan internamente; el LLM no mueve
   arrays): `load_patient_data` (→ `PatientMetrics`), `calculate_stats(patient_id, metric,
@@ -88,7 +91,6 @@ uv lock                 # regenerar lockfile tras cambiar dependencias
 - [data/sample/](data/sample/) — **fixture provisional** (contrato #1): 4 CSVs
   (`P001`–`P004`) + `medications.json`. **No es el dataset final**; B debe respetar su schema.
   Ver [data/sample/README.md](data/sample/README.md).
-- `rag/`, `data/generate_patients.py` y `interface/components.py` — **vacíos/pendientes**.
 
 ## Flujo de métricas (contrato A+C)
 
@@ -170,6 +172,10 @@ el LLM razona el *qué* y el *hasta cuándo*; el cálculo es 100% determinístic
     Con DeepSeek directo (`openai_compat`, `deepseek-flash`) el razonamiento se desactiva por defecto: en ese modo
     rechaza el `tool_choice` forzado de la salida estructurada (`LLM_THINKING`, ADR-0021).
 
+16. **Sistema visual de la UI** (ADR-0021): todo color es un token `--tp-*` con valor claro y oscuro en
+    `interface/theme.py`; tipografía Plus Jakarta Sans / JetBrains Mono embebida (funciona sin internet); sin
+    emojis decorativos; severidad con color + texto. Los componentes de `interface/components.py` devuelven HTML.
+
 ## Convenciones
 
 - Match el estilo del código circundante; comentarios y prompts en español.
@@ -191,7 +197,7 @@ el LLM razona el *qué* y el *hasta cuándo*; el cálculo es 100% determinístic
 | `tests/test_monitor_tools.py` | ✅ tools del Monitor, determinístico sobre `data/sample/*.csv` |
 | `pyproject.toml`, entorno uv | ✅ deps, entorno uv y tests funcionando listos |
 | Observabilidad (`interface/logging_config.py`) | ✅ logging dual (consola + JSONL) + LangSmith; tracea nodos, routing, `llm_*` y `tool_*` (con nombre de tool y tokens) |
-| `interface/app.py` (Gradio) | ✅ UI completa: 3 pestañas (Consulta clínica + Observabilidad dev + Evaluación) contra el grafo real |
+| `interface/app.py` (Gradio) | ✅ UI completa: 3 pestañas (Consulta + Observabilidad + Evaluación) contra el grafo real; rediseño para el congreso con modo claro/oscuro (ADR-0021, 2026-10-21) |
 | `tests/conftest.py`, `.env.example` (LangSmith) | ✅ `load_dotenv` + vars de tracing |
 | Tools de historial (`get_patient_history`, `compare_*`, `update_*`) | ✅ `tools/history_tools.py` sobre `HistoryStore` (`tools/history_store.py`: SQLite por defecto, Mongo opcional; ADR-0005); conectado al Agente Clínico |
 | `data/generate_patients.py` | ✅ 5 perfiles sintéticos (P001–P005; P005 = descompensación severa) generando CSVs en `data/sample/` |
@@ -199,7 +205,7 @@ el LLM razona el *qué* y el *hasta cuándo*; el cálculo es 100% determinístic
 | RAG — ingestión (`rag/ingest.py`) | ✅ chunking (con tamaño mínimo por corte) + embeddings locales + ChromaDB persistido en `data/chroma_db/`; idempotente (upsert) y `--rebuild`; metadata `section`; config compartida en `rag/config.py`; parámetros en `rag/RAG_TUNING.md` |
 | RAG — retrieval (`rag/retriever.py`) | ✅ `search_clinical_guidelines()` + `get_rag_fragment()`; probar con `uv run python rag/retriever.py` |
 | RAG — tools LangChain (`tools/rag_tools.py`) | ✅ `search_clinical_guidelines_tool` y `get_rag_context_tool` listos para el Agente Clínico (C) |
-| `interface/components.py` | ✅ funciones puras de render (alertas, tendencias, perfil, reporte, visor de logs, visor de evaluación); testeables sin Gradio |
+| `interface/components.py` | ✅ funciones puras de render en HTML (indicadores, alertas agrupadas, tendencias, ficha del paciente, reporte, visor de logs, visor de evaluación); testeables sin Gradio |
 | `tests/test_clinico_tools.py`, `tests/test_history_store.py` | ✅ historial determinístico (SQLite temporal por test, `conftest.py`); RAG como integración (`@pytest.mark.integration`, requiere el índice de ChromaDB); ingesta determinística en `tests/test_rag_ingest.py` |
 | `tests/cases/*.json` + `tests/eval_runner.py` | ✅ evaluación **cualitativa** de la IA (9 casos: 3 happy / 3 edge / 3 adversarial); script (no pytest) que vuelca `logs/eval_report.json` con esperado vs. obtenido; se lee desde la pestaña **Evaluación** de la UI Gradio (selector de corrida + caso) para comparar a ojo (germen del LLM-as-judge). Flags `-c/--category`, `--case`, `--list`, `--overwrite`; el JSON es un **historial append-only** (cada corrida = un elemento del array) para correr de a un caso sin agotar tokens. Cada caso lleva `status` (`ok`/`degraded`/`error`): **`degraded`** = el LLM falló y el grafo cayó al fallback determinístico (salida que NO refleja al modelo), detectado capturando los errores de `orchestrator.graph` |
 

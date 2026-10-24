@@ -6,6 +6,8 @@
 #
 #   bootstrap → perfil → analizar → seguimiento → guardar → nueva consulta ve la sesión guardada
 
+import re
+
 import pytest
 
 import main
@@ -28,14 +30,15 @@ def test_recorrido_completo_del_medico():
     # Perfil antes de analizar: viene del historial (sesiones semilla incluidas).
     perfil = app.on_patient_change("P002")
     assert "Diabetes mellitus tipo 2" in perfil
-    assert "Sesiones previas**: 3" in perfil
+    assert re.search(r"<dt>Sesiones previas</dt><dd>3\b", perfil)
 
     # Analizar
-    chat, thread_id, reporte, alertas, tendencias = app.analyze("P002", "Refiere baja adherencia.")
+    chat, thread_id, reporte, alertas, tendencias, indicadores, _ = app.analyze("P002", "Refiere baja adherencia.")
     assert thread_id
     assert "17 alerta(s)" in chat[0]["content"]
     assert "P002" in reporte
     assert "hba1c" in alertas.lower() or "HbA1c" in alertas
+    assert "17" in indicadores and "HbA1c" in indicadores
 
     # Seguimiento: responde en el chat sin tocar el reporte del panel
     historial, caja = app.follow_up("¿Qué significa la HbA1c?", chat, thread_id)
@@ -54,13 +57,13 @@ def test_recorrido_completo_del_medico():
     comparacion = compare_with_previous_sessions("P002", current_metrics={"hba1c": 8.2})
     assert comparacion["sessions_count"] == 4
     assert comparacion["deltas"] == {"hba1c": 0.0}
-    assert app.on_patient_change("P002").count("Sesiones previas**: 4") == 1
+    assert re.search(r"<dt>Sesiones previas</dt><dd>4\b", app.on_patient_change("P002"))
 
 
 def test_paciente_inexistente_en_la_ui():
     from interface import app
 
-    chat, _, reporte, alertas, _ = app.analyze("PX99", "")
+    chat, _, reporte, alertas, *_ = app.analyze("PX99", "")
     assert "No hay datos de EHR" in chat[0]["content"]
     assert "controlado" not in reporte.lower()
     assert "Sin análisis" in alertas

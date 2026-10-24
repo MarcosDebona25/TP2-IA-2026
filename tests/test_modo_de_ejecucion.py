@@ -89,5 +89,5 @@ def test_la_ui_muestra_el_aviso_al_analizar(monkeypatch):
         monkeypatch.delenv(var, raising=False)
     from interface import app
 
-    chat, _, reporte, _, _ = app.analyze("P001", "")
-    assert "⚠️" in chat[0]["content"] and "⚠️" in reporte
+    chat, _, reporte, *_ = app.analyze("P001", "")
+    assert "no respondió" in chat[0]["content"] and "no respondió" in reporte
