@@ -179,19 +179,19 @@ Resumen de tiempos (130 palabras por minuto)
 
 | Diap. | Orador | Palabras visibles | Palabras de notas | Duración |
 |---|---|---|---|---|
-| 1 | Aguero Gonzalo | portada | 34 | 0:16 |
-| 2 | Aguero Gonzalo | 37 | 125 | 0:58 |
-| 3 | Aguero Gonzalo | 32 | 120 | 0:55 |
+| 1 | Agüero Gonzalo | portada | 34 | 0:16 |
+| 2 | Agüero Gonzalo | 37 | 125 | 0:58 |
+| 3 | Agüero Gonzalo | 32 | 120 | 0:55 |
 | 4 | Debona Marcos | 24 | 113 | 0:52 |
 | 5 | Debona Marcos | 27 | 119 | 0:55 |
-| 6 | Gaitan Gonzalo | 29 | 119 | 0:55 |
-| 7 | Gaitan Gonzalo | 22 | 115 | 0:53 |
+| 6 | Gaitán Gonzalo | 29 | 119 | 0:55 |
+| 7 | Gaitán Gonzalo | 22 | 115 | 0:53 |
 | 8 | Ocampo Franco | 37 | 114 | 0:53 |
 | 9 | Ocampo Franco | 35 | 115 | 0:53 |
 | 10 | Ocampo Franco | 2 | 0 (frase de cierre libre) | 0:10 (estimado) |
 | Total | | | 974 | 7:40 |
 
-Por integrante: Aguero 2:09, Debona 1:47, Gaitan 1:48, Ocampo 1:56. Margen sobre 10 minutos: 2:20
+Por integrante: Agüero 2:09, Debona 1:47, Gaitán 1:48, Ocampo 1:56. Margen sobre 10 minutos: 2:20
 para transiciones y cambio de orador. Las preguntas quedan fuera de los 10 minutos.
 
 
@@ -200,7 +200,7 @@ DIAPOSITIVA 1 · PORTADA
 ------------------------------------------------------------------------------------------
 Título: Sistema multi-agente de asistencia al médico en el control de pacientes con diabetes tipo 2
 Idea única: presentar el trabajo, su marco académico y los integrantes.
-Orador: Aguero Gonzalo
+Orador: Agüero Gonzalo
 Duración estimada: 0:16
 
 Contenido visible (por placeholder del layout PORTADA):
@@ -209,10 +209,10 @@ Contenido visible (por placeholder del layout PORTADA):
 {título, placeholder 2, 40 pt negrita #582899} Sistema multi-agente de asistencia al médico en el control de pacientes con diabetes tipo 2
 {rótulo fijo PROYECTO, placeholder 3, línea 1 negrita} Inteligencia Artificial · UTN Facultad Regional Santa Fe
 {placeholder 3, línea 2} JIT 2026 · 29 de octubre de 2026
-{rótulo fijo DIRECTOR/A DEL PROYECTO, placeholder 4} A confirmar por el grupo
-{rótulo fijo AUTOR/ES, placeholder 5, un nombre por línea} Aguero, Gonzalo
+{rótulo fijo DIRECTOR/A DEL PROYECTO, placeholder 4} Milagros Gutiérrez
+{rótulo fijo AUTOR/ES, placeholder 5, un nombre por línea} Agüero, Gonzalo
 Debona, Marcos
-Gaitan, Gonzalo
+Gaitán, Gonzalo
 Ocampo, Franco
 [/VISIBLE]
 
@@ -221,8 +221,8 @@ Disposición:
   DEL PROYECTO y AUTOR/ES en la fila inferior, banda UTN Santa Fe y línea tricolor fijas.
 - Logo del TP (docs/presentacion/recursos/logo-tp.png) arriba a la derecha, alineado con el
   logo JIT: alto 1,20 pulgadas, borde derecho en x 12,83, y 0,45.
-- Logo UTN FRSF: lo aporta la banda fija "UTN SANTA FE" del layout. El archivo
-  docs/presentacion/recursos/logo-utn-frsf.png queda disponible (ver conflicto C4 y duda D2).
+- Logo UTN FRSF: lo aporta la banda fija "UTN SANTA FE" del layout. No se agrega otro logo
+  UTN (decisión del grupo, ver conflicto C4).
 - Categoría: la de la plantilla para este trabajo, sin modificar su texto.
 
 Notas del orador:
@@ -241,7 +241,7 @@ DIAPOSITIVA 2 · Seguimiento de DM2 con datos fragmentados
 ------------------------------------------------------------------------------------------
 Título: Seguimiento de DM2 con datos fragmentados
 Idea única: el control de la DM2 exige integrar muchas métricas dispersas y un hallazgo crítico puede pasar inadvertido.
-Orador: Aguero Gonzalo
+Orador: Agüero Gonzalo
 Duración estimada: 0:58
 
 [VISIBLE]
@@ -281,7 +281,7 @@ DIAPOSITIVA 3 · Separar cálculo de interpretación clínica
 ------------------------------------------------------------------------------------------
 Título: Separar cálculo de interpretación clínica
 Idea única: el objetivo es un reporte de soporte y el enfoque elegido es que el modelo de lenguaje interprete pero nunca calcule.
-Orador: Aguero Gonzalo
+Orador: Agüero Gonzalo
 Duración estimada: 0:55
 
 [VISIBLE]
@@ -394,7 +394,7 @@ DIAPOSITIVA 6 · Enrutamiento y ciclo de refinamiento
 ------------------------------------------------------------------------------------------
 Título: Enrutamiento y ciclo de refinamiento
 Idea única: reglas determinísticas deciden el camino de cada mensaje y un ciclo acotado refina el análisis.
-Orador: Gaitan Gonzalo
+Orador: Gaitán Gonzalo
 Duración estimada: 0:55
 
 [VISIBLE]
@@ -439,7 +439,7 @@ DIAPOSITIVA 7 · Monitor Clínico analizando a P003
 ------------------------------------------------------------------------------------------
 Título: Monitor Clínico analizando a P003
 Idea única: en la app real, una hipoglucemia que el promedio oculta aparece como alerta calculada y trazable.
-Orador: Gaitan Gonzalo
+Orador: Gaitán Gonzalo
 Duración estimada: 0:53
 
 [VISIBLE]
@@ -740,8 +740,8 @@ C4. Plantilla contra consigna del grupo: logos.
 - Consigna: logos del TP y de UTN FRSF solo en la portada, salvo que la plantilla exija otra cosa.
 - Plantilla: el logo JIT y la banda "UTN SANTA FE" están en todos los layouts.
 - Resolución: la plantilla prevalece. Logo JIT y banda UTN en todas las diapositivas. Logo del
-  TP solo en la portada. docs/utn.png (copiado como recursos/logo-utn-frsf.png) duplicaría la
-  banda fija de la portada, por eso no se agrega por defecto (duda D2).
+  TP solo en la portada. docs/utn.png duplicaría la banda fija de la portada, por eso no se
+  agrega (decisión del grupo del 2026-10-24).
 
 C5. Plantilla contra paleta de la app: turquesa.
 - Plantilla accent2 #03D1CC contra app --tp-accent #0F766E.
@@ -792,8 +792,7 @@ Supuestos
 - S1. Las "palabras visibles" excluyen el título y el texto que aparece dentro de las capturas.
 - S2. El total máximo de 1000 palabras de notas incluye la nota de la portada (total: 974).
 - S3. La diapositiva de cierre no lleva notas escritas.
-- S4. Los nombres se escriben como en la consigna (Aguero, Gaitan, sin tildes). El docx usa
-  "Agüero" y "Gaitán". Confirmar la grafía preferida (duda D3).
+- S4. Grafía de los apellidos confirmada por el grupo: Agüero y Gaitán (coincide con el docx).
 - S5. No se prevé demostración en vivo. Durante las capturas, algunas corridas del análisis
   cayeron al respaldo determinístico porque el modelo devolvió un reporte estructurado inválido
   (registro de la app: "el LLM no devolvió un reporte estructurado válido"). Esas corridas se
@@ -805,14 +804,14 @@ Supuestos
 - S8. El docx fuente no se commitea: el repositorio es público y el docx incluye los correos de
   los autores. Esta especificación ya contiene todo lo que la fase 2 necesita de él.
 
+Decisiones del grupo (resueltas el 2026-10-24)
+- Directora del proyecto: Milagros Gutiérrez.
+- No se agrega un logo UTN adicional en la portada. La banda fija "UTN SANTA FE" de la plantilla
+  cumple ese rol. El archivo logo-utn-frsf.png se retiró de docs/presentacion/recursos/.
+- Apellidos: Agüero y Gaitán.
+
 Dudas abiertas
-- D1. Campo DIRECTOR/A DEL PROYECTO de la portada: el docx no menciona director ni docente
-  responsable. Queda "A confirmar por el grupo". Opciones: nombre del docente de la cátedra o
-  eliminar el campo.
-- D2. ¿Se agrega docs/presentacion/recursos/logo-utn-frsf.png en la portada pese a duplicar la
-  banda fija "UTN SANTA FE"? Por defecto no.
-- D3. Grafía de los apellidos: Aguero o Agüero, Gaitan o Gaitán.
-- D4. Campo PROYECTO: la plantilla lo pensó para proyectos de investigación con años de inicio y
+- D1. Campo PROYECTO: la plantilla lo pensó para proyectos de investigación con años de inicio y
   fin. Se usa para materia, facultad, evento y fecha. Confirmar.
-- D5. Si Claude Slides no reproduce exactamente la posición de los elementos fijos, ¿se acepta
+- D2. Si Claude Slides no reproduce exactamente la posición de los elementos fijos, ¿se acepta
   una aproximación visual o se arma la versión final sobre el .pptx oficial?
