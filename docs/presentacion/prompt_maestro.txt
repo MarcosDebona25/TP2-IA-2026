@@ -809,9 +809,11 @@ Decisiones del grupo (resueltas el 2026-10-24)
 - No se agrega un logo UTN adicional en la portada. La banda fija "UTN SANTA FE" de la plantilla
   cumple ese rol. El archivo logo-utn-frsf.png se retiró de docs/presentacion/recursos/.
 - Apellidos: Agüero y Gaitán.
+- Campo PROYECTO de la portada: "Inteligencia Artificial · UTN Facultad Regional Santa Fe" y
+  "JIT 2026 · 29 de octubre de 2026", aunque la plantilla lo pensó para proyectos de investigación.
+- Herramienta: Claude Slides con una aproximación visual de la plantilla. No hace falta armar la
+  versión final sobre el .pptx oficial. Las diferencias de posición o tamaño de los elementos fijos
+  se anotan en el "Registro de fase 2".
 
 Dudas abiertas
-- D1. Campo PROYECTO: la plantilla lo pensó para proyectos de investigación con años de inicio y
-  fin. Se usa para materia, facultad, evento y fecha. Confirmar.
-- D2. Si Claude Slides no reproduce exactamente la posición de los elementos fijos, ¿se acepta
-  una aproximación visual o se arma la versión final sobre el .pptx oficial?
+- Ninguna.
