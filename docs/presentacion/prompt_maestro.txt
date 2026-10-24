@@ -920,3 +920,37 @@ Verificación final (script sobre los archivos de las diapositivas, 2026-10-24)
   8: 38, 9: 36, 10: 2. Todas dentro del máximo de 40. La portada queda exenta (supuesto S7).
 - R29. Logos: logo del TP solo en la portada. Logo JIT y banda UTN en todas por exigencia de
   la plantilla.
+
+Ajuste de densidad (pedido del grupo, 2026-10-24, después de la primera versión)
+- R30. El grupo pidió más contenido visual y entre 30 % y 40 % más de palabras en las
+  diapositivas 2, 3, 5, 7, 8 y 9. Quedan sin cambios la portada, las diapositivas de
+  diagrama (4 y 6) y el cierre. Las notas del orador no cambian, por lo tanto el total
+  sigue en 974 palabras y la duración estimada no varía.
+- R31. Este pedido deja sin efecto el máximo de 40 palabras visibles de la tarea 4 en esas
+  diapositivas y se aparta de la recomendación de la plantilla ("No coloques mucho texto").
+  Lo decidió el grupo. Para limitar el impacto, la mayor parte del aumento se resolvió con
+  gráficos y el texto nuevo se tomó de las notas del orador y de las fuentes del punto 6,
+  sin datos nuevos.
+- R32. Palabras visibles después del ajuste (sin título, incluye rótulos de gráficos):
+  2: 38 a 57, 3: 33 a 47, 5: 30 a 45, 7: 25 a 40, 8: 38 a 55, 9: 36 a 52.
+- R33. Diapositiva 2: gráfico SVG con la serie real de glucosa en ayunas de P003
+  (data/sample/P003.csv, doce mediciones de 2025), banda de meta 80 a 130 mg/dL (SAD,
+  tools/threshold_tools.py), umbral de hipoglucemia < 70 mg/dL, promedio 87,4 y el valor 55
+  destacado en #B54708. Anticipa visualmente el caso de la diapositiva 7. Métricas como
+  etiquetas con relleno #E6F4F1. Se agregó la viñeta de alta demanda, carga cognitiva y
+  riesgo de omisión (notas de la diapositiva 2).
+- R34. Diapositiva 3: las dos columnas pasan a tarjetas con borde superior #0F766E unidas por
+  una flecha "valores calculados". Viñetas nuevas: estadísticas y tendencias, alertas por
+  metas (punto 2, ítem 3), usa valores ya calculados y nunca calcula (notas).
+- R35. Diapositiva 5: barra apilada con la composición del corpus (1863 Guía Nacional 2019,
+  577 SAD 2025, 1144 ADA 2024, conteo del punto 6) en lugar de la línea de fuentes, más un
+  recorrido Guías, ChromaDB, Clínico, Reporte. Viñetas nuevas: embeddings locales
+  multilingües y el motivo de no usar RAG sobre el historial (notas).
+- R36. Diapositiva 7: tira de tres pasos de la interfaz (notas), captura reducida a
+  1060 x 508 px, tercera anotación HbA1c 6,1 % (notas) y la línea "Cada alerta es trazable
+  hasta su observación" (idea única de la diapositiva).
+- R37. Diapositiva 8: los doce casos como cuadrícula de 3, 5 y 4 casillas, y las tres
+  conductas verificadas en los siete casos reportados como lista con marcas (notas). Se
+  agregó "gate de integración continua" (notas).
+- R38. Diapositiva 9: ítems numerados con una línea descriptiva cada uno (notas y fuentes del
+  punto 6). La columna "Antes del uso clínico" pasa a tarjeta para mantenerla como punto focal.
