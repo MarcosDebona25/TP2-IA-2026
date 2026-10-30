@@ -235,6 +235,9 @@ logs/*
 # schema) reemplaza estos archivos y el resto de CSV generados siguen ignorados.
 !data/sample/*.csv
 
+# Excepción: el póster y la presentación expuestos en JIT 2026 SÍ se versionan (el README los enlaza).
+!docs/publicaciones/jit/*.pdf
+
 # graphify: grafo de conocimiento regenerable (graphify extract/update .)
 graphify-out/
 

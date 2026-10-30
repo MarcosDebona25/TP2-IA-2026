@@ -27,6 +27,16 @@ producen un reporte estructurado consultando guías clínicas (RAG). **No emite 
 
 ---
 
+## Póster — JIT 2026
+
+Trabajo expuesto en las **Jornadas de Jóvenes Investigadores Tecnológicos 2026** (UTN, Facultad Regional Santa Fe).
+
+[![Póster del trabajo presentado en JIT 2026](docs/publicaciones/jit/poster-jit-2026.png)](docs/publicaciones/jit/Poster%20JIT%202026.pdf)
+
+[Póster (PDF)](docs/publicaciones/jit/Poster%20JIT%202026.pdf) · [Presentación de la exposición (PDF)](docs/publicaciones/jit/JIT%202026%20%C2%B7%20Sistema%20multi-agente%20DM2.pdf)
+
+---
+
 ## Inicio rápido (3 comandos)
 
 Requisito único: **[uv](https://docs.astral.sh/uv/)** (instala Python 3.12+ automáticamente).
@@ -152,7 +162,7 @@ tecnica/                interfaz, logs, tests y diagramas de arquitectura
 planificacion/          estado, plan MVP y roadmap
 capturas/               capturas de la UI actual + capturar.py
 branding/               logo e isotipo
-publicaciones/          conaiisi/ (paper) · jit/articulo/ · jit/presentacion/
+publicaciones/          conaiisi/ (paper) · jit/ (póster y presentación expuestos) · jit/articulo/ · jit/presentacion/
 ```
 
 ---

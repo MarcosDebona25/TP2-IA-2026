@@ -11,6 +11,7 @@
 | [capturas/](capturas/) | Capturas de la interfaz actual y el script que las genera. |
 | [branding/](branding/) | Logo e isotipo en sus variantes (más `branding.zip`). |
 | [publicaciones/conaiisi/](publicaciones/conaiisi/) | Paper para CONAIISI 2026 (versión general e investigadores) y la entrega. |
+| [publicaciones/jit/](publicaciones/jit/) | Material expuesto en JIT 2026: [póster](publicaciones/jit/Poster%20JIT%202026.pdf) y [presentación](publicaciones/jit/JIT%202026%20%C2%B7%20Sistema%20multi-agente%20DM2.pdf) en PDF. |
 | [publicaciones/jit/articulo/](publicaciones/jit/articulo/) | Artículo JIT 2026: entrega original, `correccion/` (versión corregida, figuras y [verificación de cambios](publicaciones/jit/articulo/correccion/VERIFICACION_CAMBIOS_JIT.md)) y `devolucion/` (rúbricas de los evaluadores). |
 | [publicaciones/jit/presentacion/](publicaciones/jit/presentacion/) | Presentación oral JIT 2026: plantilla y rúbrica oficiales, prompt maestro, capturas, diagramas y recursos. |
 
